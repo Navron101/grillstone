@@ -30,3 +30,11 @@ storage/*.key
 .idea
 .vscode
 .DS_Store
+/vendor/
+node_modules/
+public/build/
+storage/*.key
+.env
+.idea
+.vscode
+.DS_Store
