@@ -1,0 +1,7 @@
+/* resources/css/app.css (Tailwind v3) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: tiny tweaks so things look nice without custom theme */
+html, body { height: 100%; }
