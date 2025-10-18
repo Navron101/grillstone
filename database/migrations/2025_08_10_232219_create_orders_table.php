@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        if (!Schema::hasTable('orders')) {
+    Schema::create('orders', function (Blueprint $table) {
             $table->id(); // BIGINT UNSIGNED
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // cashier (optional)
             $table->unsignedInteger('subtotal_cents')->default(0);
@@ -17,6 +18,8 @@ return new class extends Migration {
             $table->string('status')->default('open'); // open/paid/void
             $table->timestamps();
         });
+}
+
     }
 
     public function down(): void

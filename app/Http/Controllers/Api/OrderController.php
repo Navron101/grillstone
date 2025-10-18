@@ -9,120 +9,182 @@ use App\Models\Payment;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class OrderController extends Controller {
-    public function store(Request $request) {
+class OrderController extends Controller
+{
+    public function store(Request $request)
+    {
         $data = $request->validate([
-            'items'=>'required|array|min:1',
-            'items.*.product_id'=>'required|integer|exists:products,id',
-            'items.*.qty'=>'required|integer|min:1',
-            'discount_percent'=>'nullable|numeric|min:0|max:50',
-            'payment'=> 'required|array',
-            'payment.method'=>'required|string', // Cash|Card|Digital
-            'payment.tendered_cents'=>'nullable|integer|min:0'
+            'items'                      => 'required|array|min:1',
+            'items.*.product_id'         => 'required|integer|exists:products,id',
+            'items.*.variant_id'         => 'nullable|integer|exists:recipe_variants,id',
+            'items.*.qty'                => 'required|integer|min:1',
+            'discount_percent'           => 'nullable|numeric|min:0|max:50',
+            'payment'                    => 'required|array',
+            'payment.method'             => 'required|string', // Cash|Card|Digital
+            'payment.tendered_cents'     => 'nullable|integer|min:0',
+            'location_id'                => 'nullable|integer|min:1',
         ]);
 
         return DB::transaction(function () use ($data) {
-            $taxRate = 0.15;
+            $taxRate    = 0.15;
+            $locationId = (int)($data['location_id'] ?? 1);
 
+            // Resolve price for each line (variant price overrides product price)
             $lines = collect($data['items'])->map(function ($line) {
+                /** @var Product $p */
                 $p = Product::findOrFail($line['product_id']);
-                $price = $p->price_cents;
+
+                $variantId    = $line['variant_id'] ?? null;
+                $variantPrice = null;
+
+                if ($variantId) {
+                    $variantPrice = DB::table('recipe_variants')
+                        ->where('id', $variantId)
+                        ->value('price_cents');
+                }
+
+                $price = (int) ($variantPrice ?? $p->price_cents);
+
                 return [
-                    'product'=>$p,
-                    'qty'=>$line['qty'],
-                    'price_cents'=>$price,
-                    'line_total_cents'=>$price * $line['qty']
+                    'product'           => $p,
+                    'variant_id'        => $variantId,
+                    'qty'               => (int)$line['qty'],
+                    'price_cents'       => $price,
+                    'line_total_cents'  => $price * (int)$line['qty'],
                 ];
             });
 
-            $subtotal = $lines->sum('line_total_cents');
-            $discount = (int) round($subtotal * (($data['discount_percent'] ?? 0)/100));
-            $tax = (int) round(($subtotal - $discount) * $taxRate);
-            $total = $subtotal - $discount + $tax;
+            $subtotal = (int) $lines->sum('line_total_cents');
+            $discount = (int) round($subtotal * (($data['discount_percent'] ?? 0) / 100));
+            $tax      = (int) round(($subtotal - $discount) * $taxRate);
+            $total    = (int) ($subtotal - $discount + $tax);
 
+            /** @var Order $order */
             $order = Order::create([
-                'order_no' => 'GS-'.Str::upper(Str::random(6)),
-                'subtotal_cents'=>$subtotal,
-                'tax_cents'=>$tax,
-                'discount_cents'=>$discount,
-                'total_cents'=>$total,
-                'status'=>'paid',
-                'meta'=>['cashier'=>auth()->user()->name ?? 'Cashier'],
+                'order_no'        => 'GS-' . Str::upper(Str::random(6)),
+                'subtotal_cents'  => $subtotal,
+                'tax_cents'       => $tax,
+                'discount_cents'  => $discount,
+                'total_cents'     => $total,
+                'status'          => 'paid',
+                'meta'            => ['cashier' => auth()->user()->name ?? 'Cashier'],
             ]);
 
+            // Detect optional columns once
+            $orderItemsHasVariantId = Schema::hasColumn('order_items', 'variant_id');
+            $orderItemsHasMeta      = Schema::hasColumn('order_items', 'meta');
+
             foreach ($lines as $l) {
-                OrderItem::create([
-                    'order_id'=>$order->id,
-                    'product_id'=>$l['product']->id,
-                    'qty'=>$l['qty'],
-                    'price_cents'=>$l['price_cents'],
-                    'line_total_cents'=>$l['line_total_cents'],
-                ]);
+                $payload = [
+                    'order_id'         => $order->id,
+                    'product_id'       => $l['product']->id,
+                    'qty'              => $l['qty'],
+                    'price_cents'      => $l['price_cents'],
+                    'line_total_cents' => $l['line_total_cents'],
+                ];
+
+                // Persist variant if your schema supports it
+                if ($orderItemsHasVariantId && !empty($l['variant_id'])) {
+                    $payload['variant_id'] = $l['variant_id'];
+                } elseif ($orderItemsHasMeta && !empty($l['variant_id'])) {
+                    $payload['meta'] = ['variant_id' => (int)$l['variant_id']];
+                }
+
+                OrderItem::create($payload);
             }
 
             $tendered = (int) ($data['payment']['tendered_cents'] ?? $total);
-            $change = max(0, $tendered - $total);
+            $change   = max(0, $tendered - $total);
 
             Payment::create([
-                'order_id'=>$order->id,
-                'method'=>$data['payment']['method'],
-                'amount_cents'=>$tendered - $change,
-                'change_cents'=>$change,
+                'order_id'     => $order->id,
+                'method'       => $data['payment']['method'],
+                'amount_cents' => $tendered - $change,
+                'change_cents' => $change,
             ]);
 
+            // --- COGS / inventory deduction ---
+            $cogsCents = 0;
+
+            // Prefer the RecipeConsumption service if available (variant-aware),
+            // otherwise fall back to FinalizeSale.
+            try {
+                if (class_exists(\App\Services\Sales\RecipeConsumption::class)) {
+                    $cogsCents = app(\App\Services\Sales\RecipeConsumption::class)
+                        ->apply($order->load('items'), $locationId);
+                } elseif (class_exists(\App\Services\Sales\FinalizeSale::class)) {
+                    $cogsCents = app(\App\Services\Sales\FinalizeSale::class)
+                        ->applyInventory($order->load('items'), $locationId);
+                }
+            } catch (\Throwable $e) {
+                // Don't break checkout if COGS fails — log it and continue
+                logger()->error('COGS failed: '.$e->getMessage(), ['order_id' => $order->id]);
+            }
+
+            // Save COGS into order meta
+            $meta = $order->meta ?? [];
+            $meta['cogs_cents'] = (int) $cogsCents;
+            $order->meta = $meta;
+            $order->save();
+
             return response()->json([
-                'order_no'=>$order->order_no,
-                'total_cents'=>$total,
-                'change_cents'=>$change,
+                'order_no'     => $order->order_no,
+                'total_cents'  => $total,
+                'change_cents' => $change,
+                'cogs_cents'   => (int) $cogsCents,
             ], 201);
         });
     }
 
-    public function hold(Request $request) {
+    public function hold(Request $request)
+    {
         $data = $request->validate([
-            'items'=>'required|array|min:1',
-            'items.*.product_id'=>'required|integer|exists:products,id',
-            'items.*.qty'=>'required|integer|min:1',
-            'discount_percent'=>'nullable|numeric|min:0|max:50',
-            'note'=>'nullable|string|max:255'
+            'items'               => 'required|array|min:1',
+            'items.*.product_id'  => 'required|integer|exists:products,id',
+            'items.*.qty'         => 'required|integer|min:1',
+            'discount_percent'    => 'nullable|numeric|min:0|max:50',
+            'note'                => 'nullable|string|max:255',
         ]);
 
         $subtotal = collect($data['items'])->sum(function ($l) {
-            $p = \App\Models\Product::findOrFail($l['product_id']);
-            return $p->price_cents * $l['qty'];
+            $p = Product::findOrFail($l['product_id']);
+            return (int)$p->price_cents * (int)$l['qty'];
         });
-        $discount = (int) round($subtotal * (($data['discount_percent'] ?? 0)/100));
-        $tax = (int) round(($subtotal - $discount) * 0.15);
-        $total = $subtotal - $discount + $tax;
+
+        $discount = (int) round($subtotal * (($data['discount_percent'] ?? 0) / 100));
+        $tax      = (int) round(($subtotal - $discount) * 0.15);
+        $total    = (int) ($subtotal - $discount + $tax);
 
         $order = Order::create([
-            'order_no'=>'GS-'.Str::upper(Str::random(6)),
-            'subtotal_cents'=>$subtotal,
-            'tax_cents'=>$tax,
-            'discount_cents'=>$discount,
-            'total_cents'=>$total,
-            'status'=>'held',
-            'note'=>$data['note'] ?? null,
+            'order_no'        => 'GS-' . Str::upper(Str::random(6)),
+            'subtotal_cents'  => $subtotal,
+            'tax_cents'       => $tax,
+            'discount_cents'  => $discount,
+            'total_cents'     => $total,
+            'status'          => 'held',
+            'note'            => $data['note'] ?? null,
         ]);
 
         foreach ($data['items'] as $l) {
-            $p = \App\Models\Product::findOrFail($l['product_id']);
+            $p = Product::findOrFail($l['product_id']);
             OrderItem::create([
-                'order_id'=>$order->id,
-                'product_id'=>$p->id,
-                'qty'=>$l['qty'],
-                'price_cents'=>$p->price_cents,
-                'line_total_cents'=>$p->price_cents * $l['qty'],
+                'order_id'         => $order->id,
+                'product_id'       => $p->id,
+                'qty'              => (int)$l['qty'],
+                'price_cents'      => (int)$p->price_cents,
+                'line_total_cents' => (int)$p->price_cents * (int)$l['qty'],
             ]);
         }
 
-        return response()->json(['order_no'=>$order->order_no], 201);
+        return response()->json(['order_no' => $order->order_no], 201);
     }
 
-    public function sendToKitchen(Request $request) {
+    public function sendToKitchen(Request $request)
+    {
         // Normally you'd publish to a queue/printer; here we just acknowledge.
-        return response()->json(['ok'=>true]);
+        return response()->json(['ok' => true]);
     }
 }

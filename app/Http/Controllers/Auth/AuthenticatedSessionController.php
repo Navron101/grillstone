@@ -3,44 +3,37 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\RedirectResponse; // ✅ the correct one
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Show the login page.
-     */
-    public function create(Request $request): Response
+    public function store(Request $request): RedirectResponse
     {
-        return Inertia::render('auth/Login', [
-            'canResetPassword' => Route::has('password.request'),
-            'status' => $request->session()->get('status'),
+        $credentials = $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+            'remember' => ['sometimes', 'boolean'],
         ]);
+
+        $remember = (bool)($credentials['remember'] ?? false);
+        $id = $credentials['username'];
+
+        // allow username or email
+        $attempted = Auth::attempt(['username' => $id, 'password' => $credentials['password']], $remember)
+            || Auth::attempt(['email' => $id, 'password' => $credentials['password']], $remember);
+
+        if ($attempted) {
+            $request->session()->regenerate();
+            return redirect()->intended(route('pos.index')); // returns Illuminate\Http\RedirectResponse
+        }
+
+        return back()->withErrors([
+            'username' => __('auth.failed'),
+        ])->onlyInput('username');
     }
 
-public function store(LoginRequest $request)
-{
-    $request->authenticate();
-    $request->session()->regenerate();
-
-    // old:
-    // return redirect()->intended(route('dashboard', absolute: false));
-
-    // new:
-    return redirect()->intended(route('pos.index', absolute: false));
-    // or simply: return redirect()->intended('/pos');
-}
-
-
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
@@ -48,6 +41,6 @@ public function store(LoginRequest $request)
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 }

@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        if (!Schema::hasTable('products')) {
+    Schema::create('products', function (Blueprint $table) {
             $table->id(); // BIGINT UNSIGNED
             $table->string('name');
             $table->unsignedInteger('price_cents'); // store money in cents
@@ -15,6 +16,8 @@ return new class extends Migration {
             // $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->timestamps();
         });
+}
+
     }
 
     public function down(): void

@@ -16,8 +16,12 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
-// POS (auth only — no email verification)
+
+
+
+// Auth-only pages
 Route::middleware('auth')->group(function () {
+    // POS
     Route::get('/pos', function () {
         return Inertia::render('POS/Index', [
             'cashier'     => auth()->user()->name ?? 'Cashier',
@@ -25,7 +29,12 @@ Route::middleware('auth')->group(function () {
             'taxRate'     => 0.15,
         ]);
     })->name('pos.index');
+
+    // Inventory (UI)
+    Route::get('/inventory', fn () => Inertia::render('Inventory/Index'))->name('inventory.index');
+    Route::get('/inventory/dishes', fn () => Inertia::render('Inventory/Dishes'))->name('inventory.dishes');
+    Route::get('/inventory/grn', fn () => Inertia::render('Inventory/GRN'))->name('inventory.grn');
 });
 
-// Keep Breeze's auth routes (login, logout, register, password, etc.)
+// Breeze / auth scaffolding (login, logout, etc.)
 require __DIR__.'/auth.php';
