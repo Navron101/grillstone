@@ -45,3 +45,14 @@ Route::delete('/inventory/dishes/{dishId}/variants/{variantId}', [InventoryContr
 Route::get('/inventory/variants/{variantId}/components', [InventoryController::class, 'listComponents']);
 Route::post('/inventory/variants/{variantId}/components', [InventoryController::class, 'upsertComponent']);
 Route::delete('/inventory/variants/{variantId}/components/{componentId}', [InventoryController::class, 'deleteComponent']);
+
+// ----- Stocktakes -----
+use App\Http\Controllers\Api\StocktakeController;
+
+Route::get('/stocktakes', [StocktakeController::class, 'index']);
+Route::post('/stocktakes', [StocktakeController::class, 'store']);
+Route::get('/stocktakes/{id}', [StocktakeController::class, 'show']);
+Route::put('/stocktakes/{id}/lines', [StocktakeController::class, 'updateLines']);
+Route::post('/stocktakes/{id}/complete', [StocktakeController::class, 'complete']);
+Route::post('/stocktakes/{id}/cancel', [StocktakeController::class, 'cancel']);
+Route::delete('/stocktakes/{id}', [StocktakeController::class, 'destroy']);

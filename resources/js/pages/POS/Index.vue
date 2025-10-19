@@ -228,14 +228,20 @@
             <div class="h-full overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
               <div v-for="p in filteredProducts" :key="p.id"
                    class="product-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
-                   :class="stockOf(p.id) === 0 ? 'opacity-60 grayscale cursor-not-allowed' : 'cursor-pointer'"
+                   :class="p.is_out_of_stock ? 'opacity-60 grayscale cursor-not-allowed' : 'cursor-pointer'"
                    @click="onPickDish(p)">
                 <div class="relative">
                   <img :src="p.img || placeholder(p.name)" :alt="p.name" class="w-full h-32 object-cover" @error="e=>onImgFallback(e,p)">
                   <div v-if="p.popular" class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Popular</div>
-                  <div class="absolute top-2 left-2 text-xs px-2 py-1 rounded-full"
-                       :class="stockBadgeClass(stockOf(p.id))">
-                    Stock: {{ stockOf(p.id) }}
+                  <div v-if="p.is_out_of_stock" class="absolute top-2 left-2 text-xs px-2 py-1 rounded-full bg-red-600 text-white font-semibold">
+                    OUT OF STOCK
+                  </div>
+                  <div v-else-if="p.is_low_stock" class="absolute top-2 left-2 text-xs px-2 py-1 rounded-full bg-amber-600 text-white font-semibold animate-pulse">
+                    LOW: {{ p.on_hand }}
+                  </div>
+                  <div v-else class="absolute top-2 left-2 text-xs px-2 py-1 rounded-full"
+                       :class="stockBadgeClass(p)">
+                    Stock: {{ p.on_hand ?? 0 }}
                   </div>
                 </div>
                 <div class="p-3">
@@ -243,8 +249,8 @@
                   <p class="text-xs text-gray-500 mb-2 line-clamp-2">{{ p.description }}</p>
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-orange-600">JMD {{ nf(p.price) }}</span>
-                    <button class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-lg text-sm"
-                            :disabled="stockOf(p.id) === 0">
+                    <button class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            :disabled="p.is_out_of_stock">
                       <i class="fas fa-plus"></i>
                     </button>
                   </div>
@@ -391,14 +397,17 @@ const currentTime = ref(''); function tick(){ currentTime.value = new Date().toL
 onMounted(()=>{ tick(); setInterval(tick,1000) })
 
 // ---- Products from API
-type Product = { id:number; name:string; price:number; category:string; img?:string|null; description?:string|null; popular?:boolean }
+type Product = {
+  id:number; name:string; price:number; category:string; img?:string|null; description?:string|null; popular?:boolean;
+  on_hand?: number; low_stock_threshold?: number; is_low_stock?: boolean; is_out_of_stock?: boolean;
+}
 const products = ref<Product[]>([])
 const loading = ref(false)
 
 async function loadProducts(){
   loading.value = true
   try{
-    const resp = await fetch('/api/products', { headers:{ 'Accept':'application/json' } })
+    const resp = await fetch(`/api/products?location_id=${locationId}`, { headers:{ 'Accept':'application/json' } })
     if(!resp.ok){ throw new Error(await resp.text()) }
     const data = await resp.json()
     products.value = Array.isArray(data) ? data : []
@@ -407,25 +416,16 @@ async function loadProducts(){
 }
 onMounted(loadProducts)
 
-// ---- Optional stock (won’t break if endpoint missing)
-const quantities = ref<Record<number, number>>({})
-function stockOf(id:number){ return quantities.value[id] ?? 0 }
-function stockBadgeClass(q:number){ return q>5 ? 'bg-green-600 text-white' : q>0 ? 'bg-amber-600 text-white' : 'bg-gray-400 text-white' }
-
-async function loadStock(){
-  const ids = products.value.map(p=>p.id)
-  if(!ids.length) return
-  const qs = ids.map(i=>`product_ids[]=${encodeURIComponent(i)}`).join('&')
-  try{
-    const resp = await fetch(`/api/stock/summary?${qs}&location_id=${locationId}`, { headers:{ 'Accept':'application/json' } })
-    if(!resp.ok) return // silently ignore until backend is ready
-    const arr = await resp.json()
-    const m: Record<number, number> = {}
-    for(const row of arr){ m[row.product_id] = row.on_hand ?? 0 }
-    quantities.value = m
-  }catch{ /* ignore */ }
+// ---- Stock helpers
+function stockOf(id:number){
+  const p = products.value.find(x => x.id === id)
+  return p?.on_hand ?? 0
 }
-watch(products, loadStock)
+function stockBadgeClass(product: Product){
+  if (product.is_out_of_stock) return 'bg-red-600 text-white'
+  if (product.is_low_stock) return 'bg-amber-600 text-white'
+  return 'bg-green-600 text-white'
+}
 
 // ---- Filters
 const query = ref('')
@@ -448,8 +448,10 @@ type Variant = { id:number; name:string; is_default?:boolean; price:number }
 const variantModal = ref<{ show:boolean; product:Product|null; variants:Variant[]; loading:boolean }>({ show:false, product:null, variants:[], loading:false })
 
 async function onPickDish(p: Product){
-  // If stock is zero, block
-  if (stockOf(p.id) === 0) return toast('Out of stock', `${p.name} is not available`, 'warning')
+  // If stock is zero, block (strict mode)
+  if (p.is_out_of_stock && (p.on_hand ?? 0) <= 0) {
+    return toast('Out of stock', `${p.name} is not available`, 'warning')
+  }
 
   // Try to fetch variants; if none or API missing, add base product immediately
   variantModal.value = { show:true, product:p, variants:[], loading:true }
@@ -483,22 +485,40 @@ const cart = ref<CartItem[]>([])
 const totalItems = computed(() => cart.value.reduce((s,i)=>s+i.qty,0))
 
 function addToCart(base:{ id:number; name:string; price:number; variant_id:number|null; variant_name:string|null }){
-  // stock control
+  // stock control - allow negative but warn
   const inCart = cart.value.filter(i=>i.id===base.id).reduce((s,i)=>s+i.qty,0)
   const available = stockOf(base.id)
-  if (available > 0 && inCart + 1 > available) return toast('Not enough stock', `Only ${available} left`, 'warning')
+
+  if (inCart + 1 > available) {
+    if (available <= 0) {
+      toast('Negative Inventory', `Warning: ${base.name} has no stock available`, 'warning')
+    } else {
+      toast('Low Stock Warning', `Only ${available} units available, adding anyway`, 'warning')
+    }
+  }
 
   // merge lines by product+variant
   const ex = cart.value.find(i=>i.id===base.id && i.variant_id===base.variant_id)
   if (ex) ex.qty++
   else cart.value.push({ ...base, qty:1 })
-  toast('Added to Cart', `${base.name}${base.variant_name ? ' - '+base.variant_name : ''} added`)
+
+  if (inCart + 1 <= available) {
+    toast('Added to Cart', `${base.name}${base.variant_name ? ' - '+base.variant_name : ''} added`)
+  }
 }
 
 function updateQuantity(i:number, d:number){
   const it=cart.value[i]
   const available = stockOf(it.id)
-  if (d > 0 && available > 0 && it.qty + d > available) return toast('Not enough stock', `Only ${available} left`, 'warning')
+
+  if (d > 0 && it.qty + d > available) {
+    if (available <= 0) {
+      toast('Negative Inventory', `Warning: ${it.name} has no stock available`, 'warning')
+    } else {
+      toast('Low Stock Warning', `Only ${available} units available, adding anyway`, 'warning')
+    }
+  }
+
   it.qty+=d; if(it.qty<=0)cart.value.splice(i,1)
 }
 function removeFromCart(i:number){ const it=cart.value[i]; cart.value.splice(i,1); toast('Removed', `${it.name} removed`, 'warning') }
@@ -564,7 +584,7 @@ async function processPayment(){
     const data = await resp.json().catch(()=> ({}))
     toast('Payment Successful', `Order ${data.order_no ?? ''} completed`, 'success')
 
-    await loadStock()
+    await loadProducts() // Reload products to get updated stock levels
   } catch (e) {
     console.error(e)
     toast('Error', 'Unexpected error processing order', 'error')

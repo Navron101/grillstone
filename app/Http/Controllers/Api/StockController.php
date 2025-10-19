@@ -9,14 +9,24 @@ use Illuminate\Support\Facades\DB;
 class StockController extends Controller
 {
     // GET /api/stock/summary?location_id=1&product_ids=1,2,3
+    // or /api/stock/summary?location_id=1&product_ids[]=1&product_ids[]=2
     public function summary(Request $r)
     {
         $loc = (int) $r->query('location_id', 1);
-        $ids = collect(explode(',', (string) $r->query('product_ids', '')))
-            ->filter()->map(fn($v) => (int) $v)->all();
 
+        // Accept BOTH formats for product_ids
+        $idsParam = $r->input('product_ids', []);
+        if (is_string($idsParam)) {
+            $ids = collect(explode(',', $idsParam))->filter()->map('intval')->all();
+        } elseif (is_array($idsParam)) {
+            $ids = collect($idsParam)->filter()->map('intval')->all();
+        } else {
+            $ids = [];
+        }
+
+        // Sum from lots, alias as on_hand (what the POS expects)
         $q = DB::table('inventory_lots')
-            ->select('product_id', DB::raw('SUM(qty_on_hand) as qty'))
+            ->select('product_id', DB::raw('COALESCE(SUM(qty_on_hand),0) AS on_hand'))
             ->where('location_id', $loc)
             ->groupBy('product_id');
 
@@ -39,13 +49,13 @@ class StockController extends Controller
                   ->where('il.location_id', '=', $loc);
             })
             ->select(
-                'p.id', 'p.name',
-                DB::raw('COALESCE(SUM(il.qty_on_hand),0) as qty'),
-                DB::raw('COALESCE(rr.min_qty,0) as min_qty')
+                'p.id AS product_id', 'p.name',
+                DB::raw('COALESCE(SUM(il.qty_on_hand),0) AS on_hand'),
+                DB::raw('COALESCE(rr.min_qty,0) AS min_qty')
             )
-            ->groupBy('p.id','p.name','rr.min_qty')
-            ->havingRaw('qty < COALESCE(min_qty,0)')
-            ->orderBy('qty')
+            ->groupBy('p.id', 'p.name', 'rr.min_qty')
+            ->havingRaw('on_hand < COALESCE(min_qty,0)')
+            ->orderBy('on_hand')
             ->get();
 
         return response()->json($rows);
