@@ -104,6 +104,95 @@
           <p class="text-red-700 font-medium">{{ err }}</p>
         </div>
 
+        <!-- Excel Upload Section -->
+        <div class="glass-effect rounded-2xl p-6 mb-4 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-file-excel text-green-600 mr-2"></i>Bulk Import from Excel
+              </h2>
+              <p class="text-sm text-gray-600 mt-1">Upload an Excel file to import multiple stock items at once</p>
+            </div>
+            <a href="/api/grn/template" download
+               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center">
+              <i class="fas fa-download mr-2"></i>Download Template
+            </a>
+          </div>
+
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-500 transition-colors">
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              @change="handleFileSelect"
+              class="hidden"
+            />
+
+            <div v-if="!selectedFile">
+              <i class="fas fa-cloud-upload text-4xl text-gray-400 mb-3"></i>
+              <p class="text-gray-700 font-medium mb-2">Drag & drop or click to upload</p>
+              <p class="text-sm text-gray-500 mb-4">Supports: Excel (.xlsx, .xls) and CSV files</p>
+              <button
+                @click="$refs.fileInput.click()"
+                class="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Choose File
+              </button>
+            </div>
+
+            <div v-else class="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+              <div class="flex items-center">
+                <i class="fas fa-file-excel text-3xl text-green-600 mr-3"></i>
+                <div class="text-left">
+                  <p class="font-medium text-gray-800">{{ selectedFile.name }}</p>
+                  <p class="text-sm text-gray-500">{{ (selectedFile.size / 1024).toFixed(2) }} KB</p>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button
+                  @click="uploadFile"
+                  :disabled="uploading"
+                  class="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                >
+                  <i class="fas" :class="uploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                  {{ uploading ? 'Uploading...' : 'Upload' }}
+                </button>
+                <button
+                  @click="clearFile"
+                  :disabled="uploading"
+                  class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                >
+                  <i class="fas fa-times"></i> Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Results -->
+          <div v-if="uploadResult" class="mt-4 p-4 rounded-lg" :class="uploadResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+            <div class="flex items-start">
+              <i class="fas text-2xl mr-3" :class="uploadResult.success ? 'fa-check-circle text-green-600' : 'fa-exclamation-circle text-red-600'"></i>
+              <div class="flex-1">
+                <p class="font-medium" :class="uploadResult.success ? 'text-green-800' : 'text-red-800'">
+                  {{ uploadResult.message }}
+                </p>
+                <div v-if="uploadResult.errors && uploadResult.errors.length > 0" class="mt-2">
+                  <p class="text-sm font-medium text-gray-700 mb-1">Errors:</p>
+                  <ul class="text-sm text-gray-600 space-y-1">
+                    <li v-for="(error, idx) in uploadResult.errors" :key="idx" class="flex items-start">
+                      <i class="fas fa-circle text-xs mt-1 mr-2"></i>
+                      <span>{{ error }}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <button @click="uploadResult = null" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Header card -->
         <div class="glass-effect rounded-2xl p-4 mb-4 shadow-lg">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -277,6 +366,73 @@ type Ingredient = { id:number; name:string }
 const ingredients = ref<Ingredient[]>([])
 const loading = ref(false)
 const err = ref<string | null>(null)
+
+/* ---------- Excel upload ---------- */
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const uploading = ref(false)
+const uploadResult = ref<{success: boolean; message: string; errors?: string[]} | null>(null)
+
+function handleFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    selectedFile.value = target.files[0]
+    uploadResult.value = null
+  }
+}
+
+function clearFile() {
+  selectedFile.value = null
+  uploadResult.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+async function uploadFile() {
+  if (!selectedFile.value) return
+
+  uploading.value = true
+  uploadResult.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+    formData.append('location_id', form.value.location_id.toString())
+
+    const response = await fetch('/api/grn/upload', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+      },
+      body: formData,
+    })
+
+    const data = await response.json()
+
+    uploadResult.value = {
+      success: data.success || false,
+      message: data.message || 'Upload completed',
+      errors: data.errors || [],
+    }
+
+    if (data.success) {
+      // Clear file on success
+      setTimeout(() => {
+        clearFile()
+      }, 3000)
+    }
+  } catch (error: any) {
+    uploadResult.value = {
+      success: false,
+      message: 'Upload failed: ' + (error.message || 'Unknown error'),
+      errors: [error.message || 'Unknown error'],
+    }
+  } finally {
+    uploading.value = false
+  }
+}
 
 type Line = {
   uid: string

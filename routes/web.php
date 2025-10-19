@@ -35,6 +35,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/dishes', fn () => Inertia::render('Inventory/Dishes'))->name('inventory.dishes');
     Route::get('/inventory/grn', fn () => Inertia::render('Inventory/GRN'))->name('inventory.grn');
     Route::get('/inventory/stocktake', fn () => Inertia::render('Inventory/Stocktake'))->name('inventory.stocktake');
+    Route::get('/inventory/stocktake/{id}', fn ($id) => Inertia::render('Inventory/StocktakeDetail', ['id' => $id]))->name('inventory.stocktake.detail');
+
+    // Reports
+    Route::get('/reports', fn () => Inertia::render('Reports/Index'))->name('reports.index');
 });
 
 // Breeze / auth scaffolding (login, logout, etc.)

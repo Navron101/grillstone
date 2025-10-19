@@ -18,6 +18,8 @@ Route::post('/orders/{order}/pay', [OrderPaymentController::class, 'pay']);
 
 // ----- Receive stock (GRN) -----
 Route::post('/grn', [GoodsReceiptController::class, 'store']);
+Route::post('/grn/upload', [GoodsReceiptController::class, 'uploadExcel']);
+Route::get('/grn/template', [GoodsReceiptController::class, 'downloadTemplate']);
 
 // ----- Stock reads -----
 Route::get('/stock/summary', [StockController::class, 'summary']); // ?location_id=1
@@ -29,12 +31,22 @@ Route::get('/inventory/ingredients', [InventoryController::class, 'listIngredien
 Route::post('/inventory/ingredients', [InventoryController::class, 'createIngredient']);
 Route::put('/inventory/ingredients/{id}', [InventoryController::class, 'updateIngredient']);
 Route::delete('/inventory/ingredients/{id}', [InventoryController::class, 'deleteIngredient']);
+Route::post('/inventory/ingredients/upload', [InventoryController::class, 'uploadIngredients']);
+Route::get('/inventory/ingredients/template', [InventoryController::class, 'downloadIngredientsTemplate']);
 
 // Dishes
 Route::get('/inventory/dishes', [InventoryController::class, 'listDishes']);
 Route::post('/inventory/dishes', [InventoryController::class, 'createDish']);
 Route::put('/inventory/dishes/{id}', [InventoryController::class, 'updateDish']);
 Route::delete('/inventory/dishes/{id}', [InventoryController::class, 'deleteDish']);
+
+// Products (drinks, snacks, etc.)
+Route::get('/inventory/products', [InventoryController::class, 'listProducts']);
+Route::post('/inventory/products', [InventoryController::class, 'createProduct']);
+Route::put('/inventory/products/{id}', [InventoryController::class, 'updateProduct']);
+Route::delete('/inventory/products/{id}', [InventoryController::class, 'deleteProduct']);
+Route::post('/inventory/products/upload', [InventoryController::class, 'uploadProducts']);
+Route::get('/inventory/products/template', [InventoryController::class, 'downloadProductsTemplate']);
 
 // Variants & components
 Route::get('/inventory/dishes/{dishId}/variants', [InventoryController::class, 'listVariants']);
@@ -56,3 +68,11 @@ Route::put('/stocktakes/{id}/lines', [StocktakeController::class, 'updateLines']
 Route::post('/stocktakes/{id}/complete', [StocktakeController::class, 'complete']);
 Route::post('/stocktakes/{id}/cancel', [StocktakeController::class, 'cancel']);
 Route::delete('/stocktakes/{id}', [StocktakeController::class, 'destroy']);
+Route::get('/stocktakes/{id}/variance-report', [StocktakeController::class, 'varianceReport']);
+Route::get('/stocktakes/{id}/variance-report/download', [StocktakeController::class, 'downloadVarianceReport']);
+
+// ----- Reports -----
+use App\Http\Controllers\Api\ReportsController;
+
+Route::get('/reports/dashboard', [ReportsController::class, 'dashboard']);
+Route::get('/reports/trends', [ReportsController::class, 'salesTrends']);

@@ -79,6 +79,17 @@
             </li>
 
             <li>
+              <a :href="reportsHref"
+                 class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
+                 :class="isActive(reportsHref)
+                  ? 'bg-orange-600 text-white'
+                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
+                <i :class="['fas fa-chart-line text-lg', isActive(reportsHref) ? 'text-white' : 'text-gray-600']"></i>
+                <span v-if="sidebarOpen" class="font-medium">Reports</span>
+              </a>
+            </li>
+
+            <li>
               <button @click="comingSoon('HR / Payroll')"
                       class="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                 <i class="fas fa-users text-lg text-gray-600"></i>
@@ -385,6 +396,7 @@ function routeUrl(name: string, fallback: string) {
 }
 const posHref = routeUrl('pos.index', '/pos')
 const inventoryHref = '/inventory'
+const reportsHref = '/reports'
 function isActive(href: string){ try{ const cur=window.location.pathname; const path=new URL(href,window.location.origin).pathname; return cur.startsWith(path) }catch{ return false } }
 
 // ---- Logout
@@ -448,11 +460,6 @@ type Variant = { id:number; name:string; is_default?:boolean; price:number }
 const variantModal = ref<{ show:boolean; product:Product|null; variants:Variant[]; loading:boolean }>({ show:false, product:null, variants:[], loading:false })
 
 async function onPickDish(p: Product){
-  // If stock is zero, block (strict mode)
-  if (p.is_out_of_stock && (p.on_hand ?? 0) <= 0) {
-    return toast('Out of stock', `${p.name} is not available`, 'warning')
-  }
-
   // Try to fetch variants; if none or API missing, add base product immediately
   variantModal.value = { show:true, product:p, variants:[], loading:true }
   try{
@@ -551,6 +558,13 @@ function closePayment(){ showPayment.value=false; tendered.value=null }
 async function processPayment(){
   if((tendered.value ?? 0) < total.value) return toast('Insufficient Payment','Please enter a valid amount','error')
 
+  // Map frontend payment methods to database ENUM values
+  const methodMap: Record<string, string> = {
+    'Cash': 'cash',
+    'Card': 'card',
+    'Digital': 'wallet'
+  }
+
   try {
     const payload = {
       location_id: locationId,
@@ -561,7 +575,7 @@ async function processPayment(){
       })),
       discount_percent: currentDiscount.value,
       payment: {
-        method: paymentMethod.value,
+        method: methodMap[paymentMethod.value] || 'cash',
         tendered_cents: Math.round((tendered.value ?? total.value) * 100),
       },
     }
@@ -573,9 +587,17 @@ async function processPayment(){
     })
 
     if (!resp.ok) {
-      const err = await resp.text().catch(()=> '')
-      console.error('Order failed', err)
-      return toast('Order Failed', 'Please try again', 'error')
+      let errorMsg = 'Please try again'
+      try {
+        const errorData = await resp.json()
+        if (errorData.message) errorMsg = errorData.message
+        else if (errorData.errors) errorMsg = Object.values(errorData.errors).flat().join(', ')
+      } catch {
+        const textError = await resp.text().catch(()=> '')
+        if (textError) errorMsg = textError.substring(0, 100)
+      }
+      console.error('Order failed', errorMsg)
+      return toast('Order Failed', errorMsg, 'error')
     }
 
     cart.value = []

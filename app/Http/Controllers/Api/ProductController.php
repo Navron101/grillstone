@@ -40,6 +40,8 @@ class ProductController extends Controller
         // Get stock quantities for all products
         $productIds = $rows->pluck('id')->toArray();
         $stockMap = [];
+
+        // Get ingredient stock levels
         if (!empty($productIds)) {
             $stockData = DB::table('inventory_lots')
                 ->select('product_id', DB::raw('COALESCE(SUM(qty_on_hand),0) AS on_hand'))
@@ -50,6 +52,15 @@ class ProductController extends Controller
 
             foreach ($stockData as $row) {
                 $stockMap[$row->product_id] = (float) $row->on_hand;
+            }
+        }
+
+        // Calculate dish stock based on ingredient availability
+        foreach ($rows as $product) {
+            if (!isset($stockMap[$product->id])) {
+                // This is a dish - calculate how many we can make
+                $dishStock = $this->calculateDishStock($product->id, $locationId);
+                $stockMap[$product->id] = $dishStock;
             }
         }
 
@@ -82,5 +93,60 @@ class ProductController extends Controller
         });
 
         return response()->json($out);
+    }
+
+    /**
+     * Calculate how many of this dish can be made based on ingredient stock
+     * Returns the minimum number based on all recipe components
+     */
+    private function calculateDishStock(int $dishProductId, int $locationId): float
+    {
+        // Get the default variant for this dish (or first variant if no default)
+        $variant = DB::table('recipe_variants')
+            ->where('product_id', $dishProductId)
+            ->orderByDesc('is_default')
+            ->first();
+
+        if (!$variant) {
+            // No recipe defined, can't calculate stock
+            return 0;
+        }
+
+        // Get all recipe components (ingredients) for this variant
+        $components = DB::table('recipe_components')
+            ->where('variant_id', $variant->id)
+            ->get();
+
+        if ($components->isEmpty()) {
+            // No ingredients defined, can't make any
+            return 0;
+        }
+
+        $minDishesAvailable = PHP_FLOAT_MAX;
+
+        foreach ($components as $component) {
+            // Get stock for this ingredient
+            $ingredientStock = DB::table('inventory_lots')
+                ->where('product_id', $component->ingredient_product_id)
+                ->where('location_id', $locationId)
+                ->sum('qty_on_hand');
+
+            $ingredientStock = (float) $ingredientStock;
+
+            // How many dishes can we make with this ingredient?
+            $qtyNeededPerDish = (float) $component->qty_per_unit;
+
+            if ($qtyNeededPerDish <= 0) {
+                continue; // Skip if qty is invalid
+            }
+
+            $dishesFromThisIngredient = floor($ingredientStock / $qtyNeededPerDish);
+
+            // The limiting ingredient determines how many dishes we can make
+            $minDishesAvailable = min($minDishesAvailable, $dishesFromThisIngredient);
+        }
+
+        // If no valid components were found, return 0
+        return $minDishesAvailable === PHP_FLOAT_MAX ? 0 : $minDishesAvailable;
     }
 }

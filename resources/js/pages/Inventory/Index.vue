@@ -97,6 +97,11 @@
                     :class="activeTab === 'ingredients' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 hover:bg-orange-50'">
               <i class="fas fa-carrot mr-2"></i>Ingredients
             </button>
+            <button @click="activeTab = 'products'"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors"
+                    :class="activeTab === 'products' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 hover:bg-orange-50'">
+              <i class="fas fa-bottle-water mr-2"></i>Products
+            </button>
             <button @click="activeTab = 'stock'"
                     class="px-4 py-2 rounded-lg font-medium transition-colors"
                     :class="activeTab === 'stock' ? 'bg-orange-600 text-white' : 'bg-white text-gray-700 hover:bg-orange-50'">
@@ -109,10 +114,16 @@
         <div v-if="activeTab === 'ingredients'" class="glass-effect rounded-2xl p-6 shadow-lg">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold text-gray-800">Ingredients</h2>
-            <button @click="showAddModal = true"
-                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium">
-              <i class="fas fa-plus mr-2"></i>Add Ingredient
-            </button>
+            <div class="flex gap-2">
+              <button @click="showUploadIngredientsModal = true"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                <i class="fas fa-upload mr-2"></i>Upload Excel
+              </button>
+              <button @click="showAddModal = true"
+                      class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium">
+                <i class="fas fa-plus mr-2"></i>Add Ingredient
+              </button>
+            </div>
           </div>
 
           <div v-if="loadingIngredients" class="text-center py-8 text-gray-500">Loading ingredients...</div>
@@ -144,8 +155,67 @@
                             class="text-blue-600 hover:text-blue-800">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button @click="deleteIngredient(ing.id)"
+                    <button @click="confirmDeleteIngredient(ing.id)"
                             class="text-red-600 hover:text-red-800">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Products Tab -->
+        <div v-if="activeTab === 'products'" class="glass-effect rounded-2xl p-6 shadow-lg">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Products (Drinks, Snacks, etc.)</h2>
+            <div class="flex gap-2">
+              <button @click="showUploadProductsModal = true"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                <i class="fas fa-upload mr-2"></i>Upload Excel
+              </button>
+              <button @click="showAddProductModal = true"
+                      class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium">
+                <i class="fas fa-plus mr-2"></i>Add Product
+              </button>
+            </div>
+          </div>
+
+          <div v-if="loadingProducts" class="text-center py-8 text-gray-500">Loading products...</div>
+
+          <div v-else-if="!products.length" class="text-center py-8 text-gray-400">
+            <i class="fas fa-bottle-water text-4xl mb-3"></i>
+            <p>No products yet.</p>
+            <button @click="showAddProductModal = true" class="mt-4 text-orange-600 hover:underline">
+              Add your first product
+            </button>
+          </div>
+
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-2 text-left font-medium text-gray-700">Product Name</th>
+                  <th class="px-4 py-2 text-left font-medium text-gray-700">Category</th>
+                  <th class="px-4 py-2 text-right font-medium text-gray-700">Price</th>
+                  <th class="px-4 py-2 text-left font-medium text-gray-700">Unit</th>
+                  <th class="px-4 py-2 text-right font-medium text-gray-700">Low Stock Threshold</th>
+                  <th class="px-4 py-2 text-center font-medium text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="product in products" :key="product.id" class="border-t border-gray-100 hover:bg-gray-50">
+                  <td class="px-4 py-3 font-medium text-gray-800">{{ product.name }}</td>
+                  <td class="px-4 py-3 text-gray-600">{{ product.category || 'N/A' }}</td>
+                  <td class="px-4 py-3 text-right text-gray-700">JMD {{ nf(product.price_cents / 100) }}</td>
+                  <td class="px-4 py-3 text-gray-600">{{ product.unit_name || 'ea' }}</td>
+                  <td class="px-4 py-3 text-right text-gray-600">{{ product.low_stock_threshold || 5 }}</td>
+                  <td class="px-4 py-3 text-center space-x-2">
+                    <button @click="editProduct(product)" class="text-blue-600 hover:text-blue-800" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button @click="confirmDeleteProduct(product.id)" class="text-red-600 hover:text-red-800" title="Delete">
                       <i class="fas fa-trash"></i>
                     </button>
                   </td>
@@ -269,6 +339,200 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showDeleteConfirm = false">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-4">Confirm Delete</h3>
+        <p class="text-gray-700 mb-6">Are you sure you want to delete this ingredient? This action cannot be undone.</p>
+        <div class="flex justify-end gap-2">
+          <button @click="showDeleteConfirm = false" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button @click="deleteIngredient" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Product Modal -->
+    <div v-if="showAddProductModal || editingProduct" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="closeProductModal">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-4">{{ editingProduct ? 'Edit' : 'Add' }} Product</h3>
+
+        <form @submit.prevent="saveProduct" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+            <input v-model="productForm.name" type="text" required
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                   placeholder="e.g., Coca Cola, Bottled Water, Chocolate Bar">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <input v-model="productForm.category" type="text"
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                   placeholder="e.g., Beverages, Snacks, Pastries">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Price (JMD) *</label>
+            <input v-model.number="productForm.price" type="number" step="0.01" min="0" required
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                   placeholder="0.00">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+            <select v-model="productForm.unit_name"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="ea">Each (ea)</option>
+              <option value="bottle">Bottle</option>
+              <option value="can">Can</option>
+              <option value="box">Box</option>
+              <option value="pack">Pack</option>
+              <option value="unit">Unit</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+            <textarea v-model="productForm.description" rows="2"
+                      class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                      placeholder="Brief description of the product"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+            <input v-model.number="productForm.low_stock_threshold" type="number" step="1" min="0"
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                   placeholder="5">
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4">
+            <button type="button" @click="closeProductModal"
+                    class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+              {{ editingProduct ? 'Update' : 'Create' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Product Confirmation Modal -->
+    <div v-if="showDeleteProductConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showDeleteProductConfirm = false">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-4">Confirm Delete</h3>
+        <p class="text-gray-700 mb-6">Are you sure you want to delete this product? This action cannot be undone.</p>
+        <div class="flex justify-end gap-2">
+          <button @click="showDeleteProductConfirm = false; deleteProductTarget = null" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button @click="deleteProduct" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Ingredients Modal -->
+    <div v-if="showUploadIngredientsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="closeUploadIngredientsModal">
+      <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+        <h3 class="text-lg font-bold mb-4">Upload Ingredients from Excel</h3>
+
+        <!-- Download Template -->
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-sm text-blue-800 mb-2">
+            <i class="fas fa-info-circle mr-1"></i>
+            First time? Download the template to see the required format.
+          </p>
+          <a href="/api/inventory/ingredients/template" class="text-blue-600 hover:underline text-sm font-medium">
+            <i class="fas fa-download mr-1"></i>Download Template
+          </a>
+        </div>
+
+        <!-- File Upload -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Excel File</label>
+          <input type="file" ref="ingredientsFileInput" @change="handleIngredientsFileSelect" accept=".xlsx,.xls,.csv"
+                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <p v-if="ingredientsFile" class="text-sm text-gray-600 mt-1">
+            <i class="fas fa-file-excel text-green-600 mr-1"></i>{{ ingredientsFile.name }}
+          </p>
+        </div>
+
+        <!-- Upload Results -->
+        <div v-if="uploadIngredientsResult" class="mb-4 p-3 rounded-lg" :class="uploadIngredientsResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+          <p class="font-medium mb-1" :class="uploadIngredientsResult.success ? 'text-green-800' : 'text-red-800'">
+            {{ uploadIngredientsResult.message }}
+          </p>
+          <div v-if="uploadIngredientsResult.errors && uploadIngredientsResult.errors.length > 0" class="mt-2">
+            <p class="text-sm font-medium text-red-700 mb-1">Errors:</p>
+            <ul class="text-sm text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
+              <li v-for="(error, idx) in uploadIngredientsResult.errors" :key="idx">{{ error }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="closeUploadIngredientsModal" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+            Close
+          </button>
+          <button @click="uploadIngredientsFile" :disabled="!ingredientsFile || uploadingIngredients"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fas fa-upload mr-1"></i>{{ uploadingIngredients ? 'Uploading...' : 'Upload' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Products Modal -->
+    <div v-if="showUploadProductsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="closeUploadProductsModal">
+      <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+        <h3 class="text-lg font-bold mb-4">Upload Products from Excel</h3>
+
+        <!-- Download Template -->
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-sm text-blue-800 mb-2">
+            <i class="fas fa-info-circle mr-1"></i>
+            First time? Download the template to see the required format.
+          </p>
+          <a href="/api/inventory/products/template" class="text-blue-600 hover:underline text-sm font-medium">
+            <i class="fas fa-download mr-1"></i>Download Template
+          </a>
+        </div>
+
+        <!-- File Upload -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Select Excel File</label>
+          <input type="file" ref="productsFileInput" @change="handleProductsFileSelect" accept=".xlsx,.xls,.csv"
+                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <p v-if="productsFile" class="text-sm text-gray-600 mt-1">
+            <i class="fas fa-file-excel text-green-600 mr-1"></i>{{ productsFile.name }}
+          </p>
+        </div>
+
+        <!-- Upload Results -->
+        <div v-if="uploadProductsResult" class="mb-4 p-3 rounded-lg" :class="uploadProductsResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+          <p class="font-medium mb-1" :class="uploadProductsResult.success ? 'text-green-800' : 'text-red-800'">
+            {{ uploadProductsResult.message }}
+          </p>
+          <div v-if="uploadProductsResult.errors && uploadProductsResult.errors.length > 0" class="mt-2">
+            <p class="text-sm font-medium text-red-700 mb-1">Errors:</p>
+            <ul class="text-sm text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
+              <li v-for="(error, idx) in uploadProductsResult.errors" :key="idx">{{ error }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button @click="closeUploadProductsModal" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+            Close
+          </button>
+          <button @click="uploadProductsFile" :disabled="!productsFile || uploadingProducts"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fas fa-upload mr-1"></i>{{ uploadingProducts ? 'Uploading...' : 'Upload' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast Notification -->
     <div class="notification bg-white rounded-lg shadow-lg p-4 w-80" :class="{ show: toastShow }">
       <div class="flex items-center">
@@ -310,7 +574,7 @@ function tick() { currentTime.value = new Date().toLocaleTimeString() }
 onMounted(() => { tick(); setInterval(tick, 1000) })
 
 // Tabs
-const activeTab = ref<'ingredients' | 'stock'>('ingredients')
+const activeTab = ref<'ingredients' | 'products' | 'stock'>('ingredients')
 
 // Types
 type Ingredient = {
@@ -318,6 +582,17 @@ type Ingredient = {
   name: string
   unit_name: string
   price_cents: number
+  low_stock_threshold: number | null
+  type: string
+}
+
+type Product = {
+  id: number
+  name: string
+  category: string | null
+  price_cents: number
+  unit_name: string | null
+  description: string | null
   low_stock_threshold: number | null
   type: string
 }
@@ -332,8 +607,10 @@ type StockLevel = {
 
 // Data
 const ingredients = ref<Ingredient[]>([])
+const products = ref<Product[]>([])
 const stockLevels = ref<StockLevel[]>([])
 const loadingIngredients = ref(false)
+const loadingProducts = ref(false)
 const loadingStock = ref(false)
 
 // Modal
@@ -436,17 +713,28 @@ function editIngredient(ing: Ingredient) {
   }
 }
 
-async function deleteIngredient(id: number) {
-  if (!confirm('Delete this ingredient? This cannot be undone.')) return
+const showDeleteConfirm = ref(false)
+const deleteTarget = ref<number | null>(null)
+
+function confirmDeleteIngredient(id: number) {
+  deleteTarget.value = id
+  showDeleteConfirm.value = true
+}
+
+async function deleteIngredient() {
+  if (!deleteTarget.value) return
 
   try {
-    const resp = await fetch(`/api/inventory/ingredients/${id}`, { method: 'DELETE' })
+    const resp = await fetch(`/api/inventory/ingredients/${deleteTarget.value}`, { method: 'DELETE' })
     if (!resp.ok) throw new Error('Failed to delete ingredient')
     toast('Success', 'Ingredient deleted', 'success')
     await loadIngredients()
   } catch (e) {
     console.error(e)
     toast('Error', 'Failed to delete ingredient', 'error')
+  } finally {
+    showDeleteConfirm.value = false
+    deleteTarget.value = null
   }
 }
 
@@ -458,6 +746,244 @@ function closeModal() {
 
 function formatPrice(cents: number) {
   return (cents / 100).toFixed(2)
+}
+
+// Products
+const showAddProductModal = ref(false)
+const editingProduct = ref<Product | null>(null)
+const productForm = ref({
+  name: '',
+  category: '',
+  price: 0,
+  unit_name: 'ea',
+  description: '',
+  low_stock_threshold: 5
+})
+const showDeleteProductConfirm = ref(false)
+const deleteProductTarget = ref<number | null>(null)
+
+async function loadProducts() {
+  loadingProducts.value = true
+  try {
+    const resp = await fetch('/api/inventory/products')
+    if (!resp.ok) throw new Error('Failed to load products')
+    products.value = await resp.json()
+  } catch (e) {
+    console.error(e)
+    toast('Error', 'Failed to load products', 'error')
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+function editProduct(product: Product) {
+  editingProduct.value = product
+  productForm.value = {
+    name: product.name,
+    category: product.category || '',
+    price: product.price_cents / 100,
+    unit_name: product.unit_name || 'ea',
+    description: product.description || '',
+    low_stock_threshold: product.low_stock_threshold || 5
+  }
+  showAddProductModal.value = true
+}
+
+async function saveProduct() {
+  try {
+    const payload = {
+      name: productForm.value.name,
+      category: productForm.value.category,
+      price_cents: Math.round((productForm.value.price ?? 0) * 100),
+      unit_name: productForm.value.unit_name,
+      description: productForm.value.description,
+      low_stock_threshold: productForm.value.low_stock_threshold,
+    }
+
+    if (editingProduct.value) {
+      const resp = await fetch(`/api/inventory/products/${editingProduct.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!resp.ok) throw new Error('Failed to update product')
+      toast('Success', 'Product updated successfully', 'success')
+    } else {
+      const resp = await fetch('/api/inventory/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!resp.ok) throw new Error('Failed to create product')
+      toast('Success', 'Product created successfully', 'success')
+    }
+
+    closeProductModal()
+    await loadProducts()
+  } catch (e) {
+    console.error(e)
+    toast('Error', 'Failed to save product', 'error')
+  }
+}
+
+function confirmDeleteProduct(id: number) {
+  deleteProductTarget.value = id
+  showDeleteProductConfirm.value = true
+}
+
+async function deleteProduct() {
+  if (!deleteProductTarget.value) return
+
+  try {
+    const resp = await fetch(`/api/inventory/products/${deleteProductTarget.value}`, { method: 'DELETE' })
+    if (!resp.ok) throw new Error('Failed to delete product')
+    toast('Success', 'Product deleted', 'success')
+    await loadProducts()
+  } catch (e) {
+    console.error(e)
+    toast('Error', 'Failed to delete product', 'error')
+  } finally {
+    showDeleteProductConfirm.value = false
+    deleteProductTarget.value = null
+  }
+}
+
+function closeProductModal() {
+  showAddProductModal.value = false
+  editingProduct.value = null
+  productForm.value = { name: '', category: '', price: 0, unit_name: 'ea', description: '', low_stock_threshold: 5 }
+}
+
+// Excel Uploads - Ingredients
+const showUploadIngredientsModal = ref(false)
+const ingredientsFileInput = ref<HTMLInputElement | null>(null)
+const ingredientsFile = ref<File | null>(null)
+const uploadingIngredients = ref(false)
+const uploadIngredientsResult = ref<{ success: boolean; message: string; errors?: string[] } | null>(null)
+
+function handleIngredientsFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    ingredientsFile.value = target.files[0]
+    uploadIngredientsResult.value = null
+  }
+}
+
+async function uploadIngredientsFile() {
+  if (!ingredientsFile.value) return
+
+  uploadingIngredients.value = true
+  uploadIngredientsResult.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', ingredientsFile.value)
+
+    const resp = await fetch('/api/inventory/ingredients/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const result = await resp.json()
+    uploadIngredientsResult.value = result
+
+    if (result.success) {
+      toast('Success', result.message, 'success')
+      await loadIngredients()
+      // Reset file input after successful upload
+      ingredientsFile.value = null
+      if (ingredientsFileInput.value) {
+        ingredientsFileInput.value.value = ''
+      }
+    } else {
+      toast('Error', result.message || 'Upload failed', 'error')
+    }
+  } catch (e) {
+    console.error(e)
+    uploadIngredientsResult.value = {
+      success: false,
+      message: 'Upload failed. Please try again.',
+      errors: [e instanceof Error ? e.message : 'Unknown error']
+    }
+    toast('Error', 'Upload failed', 'error')
+  } finally {
+    uploadingIngredients.value = false
+  }
+}
+
+function closeUploadIngredientsModal() {
+  showUploadIngredientsModal.value = false
+  ingredientsFile.value = null
+  uploadIngredientsResult.value = null
+  if (ingredientsFileInput.value) {
+    ingredientsFileInput.value.value = ''
+  }
+}
+
+// Excel Uploads - Products
+const showUploadProductsModal = ref(false)
+const productsFileInput = ref<HTMLInputElement | null>(null)
+const productsFile = ref<File | null>(null)
+const uploadingProducts = ref(false)
+const uploadProductsResult = ref<{ success: boolean; message: string; errors?: string[] } | null>(null)
+
+function handleProductsFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    productsFile.value = target.files[0]
+    uploadProductsResult.value = null
+  }
+}
+
+async function uploadProductsFile() {
+  if (!productsFile.value) return
+
+  uploadingProducts.value = true
+  uploadProductsResult.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', productsFile.value)
+
+    const resp = await fetch('/api/inventory/products/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const result = await resp.json()
+    uploadProductsResult.value = result
+
+    if (result.success) {
+      toast('Success', result.message, 'success')
+      await loadProducts()
+      // Reset file input after successful upload
+      productsFile.value = null
+      if (productsFileInput.value) {
+        productsFileInput.value.value = ''
+      }
+    } else {
+      toast('Error', result.message || 'Upload failed', 'error')
+    }
+  } catch (e) {
+    console.error(e)
+    uploadProductsResult.value = {
+      success: false,
+      message: 'Upload failed. Please try again.',
+      errors: [e instanceof Error ? e.message : 'Unknown error']
+    }
+    toast('Error', 'Upload failed', 'error')
+  } finally {
+    uploadingProducts.value = false
+  }
+}
+
+function closeUploadProductsModal() {
+  showUploadProductsModal.value = false
+  productsFile.value = null
+  uploadProductsResult.value = null
+  if (productsFileInput.value) {
+    productsFileInput.value.value = ''
+  }
 }
 
 // Toast
@@ -479,6 +1005,7 @@ function toast(title: string, msg: string, type: 'success' | 'error' | 'warning'
 // Init
 onMounted(() => {
   loadIngredients()
+  loadProducts()
   loadStockLevels()
 })
 </script>

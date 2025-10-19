@@ -66,7 +66,45 @@ class RecipeConsumption
                     }
                 }
 
-                // If needQty > 0 here, you sold more than you have -> negative balance not applied (can add backorder logic later)
+                // If needQty > 0 here, we sold more than we have -> create negative inventory lot
+                if ($needQty > 0) {
+                    // Get last lot's cost for valuation, or use 0
+                    $lastLot = DB::table('inventory_lots')
+                        ->where('product_id',$c->ingredient_product_id)
+                        ->where('location_id',$locationId)
+                        ->orderByDesc('received_at')->orderByDesc('id')
+                        ->first();
+
+                    $unitCost = $lastLot ? (int)$lastLot->unit_cost_cents : 0;
+                    $totalCogs += (int) round($needQty * $unitCost);
+
+                    // Create negative inventory lot
+                    $negLotId = DB::table('inventory_lots')->insertGetId([
+                        'product_id' => $c->ingredient_product_id,
+                        'location_id'=> $locationId,
+                        'lot_code'   => 'NEGATIVE-' . now()->format('YmdHis') . '-' . $order->id,
+                        'qty_on_hand'=> -$needQty,
+                        'unit_cost_cents'=> $unitCost,
+                        'received_at'=> now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    if (DB::getSchemaBuilder()->hasTable('stock_movements')) {
+                        DB::table('stock_movements')->insert([
+                            'product_id' => $c->ingredient_product_id,
+                            'location_id'=> $locationId,
+                            'lot_id'     => $negLotId,
+                            'direction'  => 'out',
+                            'qty'        => $needQty,
+                            'unit_cost_cents'=> $unitCost,
+                            'reason'     => 'sale_negative',
+                            'meta'       => json_encode(['order_id'=>$order->id, 'dish_id'=>$dishId, 'negative_inventory'=>true]),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
             }
         }
 

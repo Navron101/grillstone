@@ -8,6 +8,8 @@ use App\Models\StocktakeLine;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Exports\StocktakeVarianceExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StocktakeController extends Controller
 {
@@ -46,7 +48,7 @@ class StocktakeController extends Controller
                 'location_id' => $data['location_id'],
                 'reference' => $data['reference'] ?? 'ST-' . now()->format('Y-m-d-His'),
                 'status' => 'draft',
-                'counted_by' => auth()->id(),
+                'counted_by' => auth()->id() ?? 1, // Default to user 1 if not authenticated
                 'counted_at' => now(),
                 'notes' => $data['notes'] ?? null,
             ]);
@@ -166,11 +168,11 @@ class StocktakeController extends Controller
                             'product_id' => $line->product_id,
                             'location_id' => $stocktake->location_id,
                             'qty_delta' => $line->variance,
-                            'reason' => 'stocktake_adjustment',
+                            'reason' => 'variance',
                             'ref_type' => 'stocktake',
                             'ref_id' => $stocktake->id,
                             'unit_cost_cents' => $line->unit_cost_cents,
-                            'created_by' => auth()->id(),
+                            'created_by' => auth()->id() ?? 1,
                             'created_at' => now(),
                         ]);
 
@@ -233,5 +235,56 @@ class StocktakeController extends Controller
         $stocktake->delete();
 
         return response()->json(['message' => 'Stocktake deleted']);
+    }
+
+    /**
+     * Get variance report for a stocktake
+     */
+    public function varianceReport($id)
+    {
+        $stocktake = Stocktake::with(['lines.product', 'location', 'counter'])
+            ->findOrFail($id);
+
+        // Calculate summary stats
+        $totalItems = $stocktake->lines->count();
+        $countedItems = $stocktake->lines->filter(fn($l) => $l->actual_qty !== null)->count();
+        $itemsWithVariance = $stocktake->lines->filter(fn($l) => $l->variance != 0)->count();
+
+        $totalVarianceValue = $stocktake->lines->reduce(function ($sum, $line) {
+            if ($line->variance !== null && $line->variance !== 0) {
+                return $sum + ($line->variance * ($line->unit_cost_cents ?? 0) / 100);
+            }
+            return $sum;
+        }, 0);
+
+        // Group variances
+        $positiveVariances = $stocktake->lines->filter(fn($l) => $l->variance > 0);
+        $negativeVariances = $stocktake->lines->filter(fn($l) => $l->variance < 0);
+
+        return response()->json([
+            'stocktake' => $stocktake,
+            'summary' => [
+                'total_items' => $totalItems,
+                'counted_items' => $countedItems,
+                'items_with_variance' => $itemsWithVariance,
+                'total_variance_value' => $totalVarianceValue,
+                'positive_variances_count' => $positiveVariances->count(),
+                'negative_variances_count' => $negativeVariances->count(),
+                'positive_variances_value' => $positiveVariances->sum(fn($l) => $l->variance * ($l->unit_cost_cents ?? 0) / 100),
+                'negative_variances_value' => $negativeVariances->sum(fn($l) => $l->variance * ($l->unit_cost_cents ?? 0) / 100),
+            ],
+            'variances' => $stocktake->lines->filter(fn($l) => $l->variance != 0)->values(),
+        ]);
+    }
+
+    /**
+     * Download variance report as Excel
+     */
+    public function downloadVarianceReport($id)
+    {
+        $stocktake = Stocktake::findOrFail($id);
+        $filename = 'stocktake-variance-' . $stocktake->reference . '-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new StocktakeVarianceExport($id), $filename);
     }
 }

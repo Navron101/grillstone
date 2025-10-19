@@ -6,6 +6,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Imports\IngredientsImport;
+use App\Imports\ProductsImport;
+use App\Exports\IngredientsTemplateExport;
+use App\Exports\ProductsTemplateExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventoryController extends Controller
 {
@@ -213,5 +218,163 @@ public function listVariants($dishId)
     {
         DB::table('recipe_components')->where('id',$componentId)->where('variant_id',$variantId)->delete();
         return response()->json(['ok'=>true]);
+    }
+
+    // PRODUCTS (drinks, snacks, etc.)
+    public function listProducts()
+    {
+        return response()->json(
+            DB::table('products')->where('type','product')->orderBy('name')->get()
+        );
+    }
+
+    public function createProduct(Request $r)
+    {
+        $data = $r->validate([
+            'name' => 'required|string|max:120',
+            'category' => 'nullable|string|max:64',
+            'price_cents' => 'required|integer|min:0',
+            'unit_name' => 'nullable|string|max:20',
+            'description' => 'nullable|string|max:500',
+            'image_url' => 'nullable|string|max:255',
+            'low_stock_threshold' => 'nullable|numeric|min:0',
+        ]);
+
+        $id = DB::table('products')->insertGetId([
+            'name' => $data['name'],
+            'category' => $data['category'] ?? null,
+            'price_cents' => $data['price_cents'],
+            'unit_name' => $data['unit_name'] ?? null,
+            'description' => $data['description'] ?? null,
+            'image_url' => $data['image_url'] ?? null,
+            'low_stock_threshold' => $data['low_stock_threshold'] ?? 5,
+            'type' => 'product',
+            'is_active' => true,
+            'created_at'=>now(),
+            'updated_at'=>now(),
+        ]);
+
+        return response()->json(['id'=>$id], 201);
+    }
+
+    public function updateProduct($id, Request $r)
+    {
+        $data = $r->validate([
+            'name' => 'required|string|max:120',
+            'category' => 'nullable|string|max:64',
+            'price_cents' => 'required|integer|min:0',
+            'unit_name' => 'nullable|string|max:20',
+            'description' => 'nullable|string|max:500',
+            'image_url' => 'nullable|string|max:255',
+            'low_stock_threshold' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::table('products')->where('id',$id)->where('type','product')->update([
+            'name' => $data['name'],
+            'category' => $data['category'] ?? null,
+            'price_cents' => $data['price_cents'],
+            'unit_name' => $data['unit_name'] ?? null,
+            'description' => $data['description'] ?? null,
+            'image_url' => $data['image_url'] ?? null,
+            'low_stock_threshold' => $data['low_stock_threshold'] ?? 5,
+            'updated_at'=>now(),
+        ]);
+
+        return response()->json(['ok'=>true]);
+    }
+
+    public function deleteProduct($id)
+    {
+        DB::table('products')->where('id',$id)->where('type','product')->delete();
+        return response()->json(['ok'=>true]);
+    }
+
+    // EXCEL UPLOADS
+    public function uploadIngredients(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            $import = new IngredientsImport();
+            Excel::import($import, $request->file('file'));
+
+            $errors = $import->getErrors();
+            $successCount = $import->getSuccessCount();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$successCount} ingredients",
+                'imported_count' => $successCount,
+                'errors' => $errors,
+            ]);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = [];
+            foreach ($failures as $failure) {
+                $errors[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $errors,
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage(),
+                'errors' => [$e->getMessage()],
+            ], 500);
+        }
+    }
+
+    public function downloadIngredientsTemplate()
+    {
+        return Excel::download(new IngredientsTemplateExport, 'ingredients-template.xlsx');
+    }
+
+    public function uploadProducts(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            $import = new ProductsImport();
+            Excel::import($import, $request->file('file'));
+
+            $errors = $import->getErrors();
+            $successCount = $import->getSuccessCount();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$successCount} products",
+                'imported_count' => $successCount,
+                'errors' => $errors,
+            ]);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = [];
+            foreach ($failures as $failure) {
+                $errors[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $errors,
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage(),
+                'errors' => [$e->getMessage()],
+            ], 500);
+        }
+    }
+
+    public function downloadProductsTemplate()
+    {
+        return Excel::download(new ProductsTemplateExport, 'products-template.xlsx');
     }
 }

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Imports\GoodsReceiptImport;
+use App\Exports\GoodsReceiptTemplateExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GoodsReceiptController extends Controller
 {
@@ -150,10 +153,65 @@ class GoodsReceiptController extends Controller
     }
 
     /**
+     * Upload Excel file to import goods receipts
+     */
+    public function uploadExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+            'location_id' => 'nullable|integer|min:1',
+        ]);
+
+        $locationId = $this->resolveValidLocationId((int)($request->input('location_id') ?? 0));
+
+        try {
+            $import = new GoodsReceiptImport($locationId);
+            Excel::import($import, $request->file('file'));
+
+            $errors = $import->getErrors();
+            $successCount = $import->getSuccessCount();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$successCount} items",
+                'imported_count' => $successCount,
+                'errors' => $errors,
+            ]);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errors = [];
+
+            foreach ($failures as $failure) {
+                $errors[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors occurred',
+                'errors' => $errors,
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage(),
+                'errors' => [$e->getMessage()],
+            ], 500);
+        }
+    }
+
+    /**
+     * Download Excel template for goods receipts
+     */
+    public function downloadTemplate()
+    {
+        return Excel::download(new GoodsReceiptTemplateExport, 'goods-receipt-template.xlsx');
+    }
+
+    /**
      * Ensure we use a valid locations.id:
      * - Use provided id if it exists.
      * - Else use the first location row.
-     * - If none exists, create “Main” and return its id.
+     * - If none exists, create "Main" and return its id.
      */
     private function resolveValidLocationId(int $requestedId = 0): int
     {
