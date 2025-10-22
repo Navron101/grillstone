@@ -67,6 +67,12 @@
               </a>
             </li>
             <li>
+              <a href="/inventory/categories" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-tags text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Categories</span>
+              </a>
+            </li>
+            <li>
               <a href="/inventory/grn" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                 <i class="fas fa-clipboard-check text-lg text-gray-600"></i>
                 <span v-if="sidebarOpen" class="font-medium">Receive Stock</span>
@@ -208,7 +214,7 @@
                 <tr v-for="product in products" :key="product.id" class="border-t border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-3 font-medium text-gray-800">{{ product.name }}</td>
                   <td class="px-4 py-3 text-gray-600">{{ product.category || 'N/A' }}</td>
-                  <td class="px-4 py-3 text-right text-gray-700">JMD {{ nf(product.price_cents / 100) }}</td>
+                  <td class="px-4 py-3 text-right text-gray-700">JMD {{ formatPrice(product.price_cents) }}</td>
                   <td class="px-4 py-3 text-gray-600">{{ product.unit_name || 'ea' }}</td>
                   <td class="px-4 py-3 text-right text-gray-600">{{ product.low_stock_threshold || 5 }}</td>
                   <td class="px-4 py-3 text-center space-x-2">
@@ -366,16 +372,30 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <input v-model="productForm.category" type="text"
-                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                   placeholder="e.g., Beverages, Snacks, Pastries">
+            <select v-model="productForm.category"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none">
+              <option value="">-- Select Category --</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">
+              <a href="/inventory/categories" class="text-orange-600 hover:underline">Manage categories</a>
+            </p>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Price (JMD) *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Standalone Price (JMD) *</label>
             <input v-model.number="productForm.price" type="number" step="0.01" min="0" required
                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                    placeholder="0.00">
+            <p class="text-xs text-gray-500 mt-1">Price when sold alone</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Combo Price (JMD)</label>
+            <input v-model.number="productForm.combo_price" type="number" step="0.01" min="0"
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                   placeholder="0.00">
+            <p class="text-xs text-gray-500 mt-1">Price when added as addon to a meal (leave empty to use standalone price)</p>
           </div>
 
           <div>
@@ -609,6 +629,7 @@ type StockLevel = {
 const ingredients = ref<Ingredient[]>([])
 const products = ref<Product[]>([])
 const stockLevels = ref<StockLevel[]>([])
+const categories = ref<any[]>([])
 const loadingIngredients = ref(false)
 const loadingProducts = ref(false)
 const loadingStock = ref(false)
@@ -755,6 +776,7 @@ const productForm = ref({
   name: '',
   category: '',
   price: 0,
+  combo_price: 0,
   unit_name: 'ea',
   description: '',
   low_stock_threshold: 5
@@ -776,12 +798,13 @@ async function loadProducts() {
   }
 }
 
-function editProduct(product: Product) {
+function editProduct(product: any) {
   editingProduct.value = product
   productForm.value = {
     name: product.name,
     category: product.category || '',
     price: product.price_cents / 100,
+    combo_price: product.combo_price_cents ? product.combo_price_cents / 100 : 0,
     unit_name: product.unit_name || 'ea',
     description: product.description || '',
     low_stock_threshold: product.low_stock_threshold || 5
@@ -795,6 +818,7 @@ async function saveProduct() {
       name: productForm.value.name,
       category: productForm.value.category,
       price_cents: Math.round((productForm.value.price ?? 0) * 100),
+      combo_price_cents: productForm.value.combo_price ? Math.round(productForm.value.combo_price * 100) : null,
       unit_name: productForm.value.unit_name,
       description: productForm.value.description,
       low_stock_threshold: productForm.value.low_stock_threshold,
@@ -851,7 +875,7 @@ async function deleteProduct() {
 function closeProductModal() {
   showAddProductModal.value = false
   editingProduct.value = null
-  productForm.value = { name: '', category: '', price: 0, unit_name: 'ea', description: '', low_stock_threshold: 5 }
+  productForm.value = { name: '', category: '', price: 0, combo_price: 0, unit_name: 'ea', description: '', low_stock_threshold: 5 }
 }
 
 // Excel Uploads - Ingredients
@@ -1002,11 +1026,22 @@ function toast(title: string, msg: string, type: 'success' | 'error' | 'warning'
   setTimeout(() => toastShow.value = false, 3000)
 }
 
+async function loadCategories() {
+  try {
+    const resp = await fetch('/api/categories')
+    if (!resp.ok) throw new Error('Failed to load categories')
+    categories.value = await resp.json()
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 // Init
 onMounted(() => {
   loadIngredients()
   loadProducts()
   loadStockLevels()
+  loadCategories()
 })
 </script>
 

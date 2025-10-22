@@ -14,26 +14,29 @@ class ProductController extends Controller
     {
         $locationId = (int) $request->query('location_id', 1);
 
-        // Build a base query
-        $q = Product::query()->orderBy('name');
+        // Build a base query with category relationship
+        $q = Product::query()
+            ->with('category')
+            ->orderBy('name');
 
         // Prefer dishes; if table has type column, filter by dish, else skip
         if (Schema::hasColumn('products', 'type')) {
             $q->where(function ($qq) {
                 $qq->where('type', 'dish')
+                   ->orWhere('type', 'product') // Include retail products like beverages
                    ->orWhereNull('type'); // tolerate older rows
             });
         }
 
         // Select flexible columns (fall back if some don't exist)
-        $selects = ['id', 'name'];
+        $selects = ['id', 'name', 'category_id'];
         if (Schema::hasColumn('products', 'price_cents')) $selects[] = 'price_cents';
         if (Schema::hasColumn('products', 'price'))       $selects[] = 'price'; // old decimal
-        if (Schema::hasColumn('products', 'category'))    $selects[] = 'category';
         if (Schema::hasColumn('products', 'image_url'))   $selects[] = 'image_url';
         if (Schema::hasColumn('products', 'description')) $selects[] = 'description';
         if (Schema::hasColumn('products', 'is_popular'))  $selects[] = 'is_popular';
         if (Schema::hasColumn('products', 'low_stock_threshold')) $selects[] = 'low_stock_threshold';
+        if (Schema::hasColumn('products', 'type'))        $selects[] = 'type';
 
         $rows = $q->get($selects);
 
@@ -77,11 +80,18 @@ class ProductController extends Controller
             $onHand = $stockMap[$p->id] ?? 0;
             $threshold = isset($p->low_stock_threshold) ? (float)$p->low_stock_threshold : 5.0;
 
+            // Get category name from relationship
+            $categoryName = 'Other';
+            if ($p->category) {
+                $categoryName = $p->category->name;
+            }
+
             return [
                 'id'                   => (int) $p->id,
                 'name'                 => (string) $p->name,
                 'price'                => $price,
-                'category'             => (string) ($p->category ?? 'Other'),
+                'category'             => $categoryName,
+                'category_id'          => $p->category_id,
                 'img'                  => $p->image_url ?? null,
                 'description'          => (string) ($p->description ?? ''),
                 'popular'              => (bool) ($p->is_popular ?? false),
@@ -89,6 +99,7 @@ class ProductController extends Controller
                 'low_stock_threshold'  => $threshold,
                 'is_low_stock'         => $onHand <= $threshold && $onHand > 0,
                 'is_out_of_stock'      => $onHand <= 0,
+                'type'                 => (string) ($p->type ?? 'dish'),
             ];
         });
 

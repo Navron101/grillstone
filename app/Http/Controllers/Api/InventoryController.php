@@ -234,6 +234,7 @@ public function listVariants($dishId)
             'name' => 'required|string|max:120',
             'category' => 'nullable|string|max:64',
             'price_cents' => 'required|integer|min:0',
+            'combo_price_cents' => 'nullable|integer|min:0',
             'unit_name' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:500',
             'image_url' => 'nullable|string|max:255',
@@ -244,6 +245,7 @@ public function listVariants($dishId)
             'name' => $data['name'],
             'category' => $data['category'] ?? null,
             'price_cents' => $data['price_cents'],
+            'combo_price_cents' => $data['combo_price_cents'] ?? null,
             'unit_name' => $data['unit_name'] ?? null,
             'description' => $data['description'] ?? null,
             'image_url' => $data['image_url'] ?? null,
@@ -263,6 +265,7 @@ public function listVariants($dishId)
             'name' => 'required|string|max:120',
             'category' => 'nullable|string|max:64',
             'price_cents' => 'required|integer|min:0',
+            'combo_price_cents' => 'nullable|integer|min:0',
             'unit_name' => 'nullable|string|max:20',
             'description' => 'nullable|string|max:500',
             'image_url' => 'nullable|string|max:255',
@@ -273,6 +276,7 @@ public function listVariants($dishId)
             'name' => $data['name'],
             'category' => $data['category'] ?? null,
             'price_cents' => $data['price_cents'],
+            'combo_price_cents' => $data['combo_price_cents'] ?? null,
             'unit_name' => $data['unit_name'] ?? null,
             'description' => $data['description'] ?? null,
             'image_url' => $data['image_url'] ?? null,
@@ -376,5 +380,98 @@ public function listVariants($dishId)
     public function downloadProductsTemplate()
     {
         return Excel::download(new ProductsTemplateExport, 'products-template.xlsx');
+    }
+
+    /**
+     * Upload image for a product/dish
+     */
+    public function uploadImage(Request $request, $id)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // 2MB max
+        ]);
+
+        $product = DB::table('products')->where('id', $id)->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = 'product_' . $id . '_' . time() . '.' . $image->getClientOriginalExtension();
+
+            // Store in public/images/products directory
+            $path = $image->storeAs('images/products', $filename, 'public');
+
+            // Update product with image URL
+            DB::table('products')->where('id', $id)->update([
+                'image_url' => '/storage/' . $path,
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'image_url' => '/storage/' . $path,
+                'message' => 'Image uploaded successfully'
+            ]);
+        }
+
+        return response()->json(['error' => 'No image file provided'], 400);
+    }
+
+    /**
+     * Update image URL for a product (for external URLs)
+     */
+    public function updateImageUrl(Request $request, $id)
+    {
+        $request->validate([
+            'image_url' => 'required|string|max:500',
+        ]);
+
+        $product = DB::table('products')->where('id', $id)->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        DB::table('products')->where('id', $id)->update([
+            'image_url' => $request->image_url,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'image_url' => $request->image_url,
+            'message' => 'Image URL updated successfully'
+        ]);
+    }
+
+    /**
+     * Delete product image
+     */
+    public function deleteImage($id)
+    {
+        $product = DB::table('products')->where('id', $id)->first();
+
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        // If it's a local file, delete it
+        if ($product->image_url && str_starts_with($product->image_url, '/storage/')) {
+            $filePath = str_replace('/storage/', '', $product->image_url);
+            \Storage::disk('public')->delete($filePath);
+        }
+
+        DB::table('products')->where('id', $id)->update([
+            'image_url' => null,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image deleted successfully'
+        ]);
     }
 }
