@@ -328,7 +328,7 @@
                   </div>
                 </div>
                 <div class="p-4 flex flex-col flex-1">
-                  <h3 class="font-bold text-gray-900 mb-3 text-base">{{ p.name }}</h3>
+                  <h3 class="font-bold text-gray-900 mb-1 text-base">{{ p.name }}</h3>
                   <div class="flex items-center justify-between mt-auto">
                     <span class="font-bold text-orange-600 text-lg">JMD {{ nf(p.price) }}</span>
                     <button class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"

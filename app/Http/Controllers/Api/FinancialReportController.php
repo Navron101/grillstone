@@ -140,7 +140,7 @@ class FinancialReportController extends Controller
         // Inventory value (using FIFO lots)
         $inventory = DB::table('inventory_lots')
             ->where('created_at', '<=', $asOf)
-            ->sum(DB::raw('quantity_on_hand * unit_cost_cents'));
+            ->sum(DB::raw('qty_on_hand * unit_cost_cents'));
 
         // Accounts Receivable (if tracked)
         $accountsReceivable = 0;

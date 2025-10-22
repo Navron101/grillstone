@@ -102,6 +102,23 @@
         </div>
 
         <div v-else class="space-y-4">
+          <!-- Financial Reports Link -->
+          <div class="glass-effect rounded-2xl p-6 hover:shadow-xl transition-shadow border-2 border-orange-600">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i class="fas fa-file-invoice-dollar text-orange-600"></i>
+                  Financial Reports
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">View Balance Sheet, Income Statement, P&L, and Cash Flow</p>
+              </div>
+              <a href="/reports/financial" class="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-700 hover:from-orange-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-chart-bar"></i>
+                View Reports
+              </a>
+            </div>
+          </div>
+
           <!-- KPI Cards -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Total Revenue -->
