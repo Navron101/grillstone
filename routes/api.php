@@ -169,3 +169,14 @@ Route::get('/financial-reports/balance-sheet', [FinancialReportController::class
 Route::get('/financial-reports/income-statement', [FinancialReportController::class, 'incomeStatement']);
 Route::get('/financial-reports/profit-and-loss', [FinancialReportController::class, 'profitAndLoss']);
 Route::get('/financial-reports/cash-flow', [FinancialReportController::class, 'cashFlowStatement']);
+
+// ----- Invoice OCR -----
+use App\Http\Controllers\Api\InvoiceOcrController;
+
+Route::post('/invoices/upload', [InvoiceOcrController::class, 'upload']);
+Route::get('/invoices', [InvoiceOcrController::class, 'index']);
+Route::get('/invoices/{invoice}', [InvoiceOcrController::class, 'show']);
+Route::put('/invoices/{invoice}', [InvoiceOcrController::class, 'update']);
+Route::delete('/invoices/{invoice}', [InvoiceOcrController::class, 'destroy']);
+Route::post('/invoices/{invoice}/create-grn', [InvoiceOcrController::class, 'createGoodsReceipt']);
+Route::get('/invoices/{invoice}/match-products', [InvoiceOcrController::class, 'matchProducts']);

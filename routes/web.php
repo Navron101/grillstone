@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventory/dishes', fn () => Inertia::render('Inventory/Dishes'))->name('inventory.dishes');
     Route::get('/inventory/categories', fn () => Inertia::render('Inventory/Categories'))->name('inventory.categories');
     Route::get('/inventory/grn', fn () => Inertia::render('Inventory/GRN'))->name('inventory.grn');
+    Route::get('/inventory/invoice-upload', fn () => Inertia::render('Inventory/InvoiceUpload'))->name('inventory.invoice-upload');
     Route::get('/inventory/stocktake', fn () => Inertia::render('Inventory/Stocktake'))->name('inventory.stocktake');
     Route::get('/inventory/stocktake/{id}', fn ($id) => Inertia::render('Inventory/StocktakeDetail', ['id' => $id]))->name('inventory.stocktake.detail');
 
