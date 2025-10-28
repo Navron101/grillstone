@@ -5,14 +5,85 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
+import { Folder, LayoutGrid, LineChart, Users, FileText, FilePlus, DollarSign, Home, ArrowDownToLine, XCircle } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'POS',
-        href: '/pos',
         icon: LayoutGrid,
+        items: [
+            {
+                title: 'Point of Sale',
+                href: '/pos',
+            },
+            {
+                title: 'Payout',
+                href: '/pos#payout',
+            },
+            {
+                title: 'Close Till',
+                href: '/pos#close-till',
+            },
+            {
+                title: 'Settlements',
+                href: '/settlements',
+            },
+        ],
+    },
+    {
+        title: 'Inventory',
+        href: '/inventory',
+        icon: Folder,
+    },
+    {
+        title: 'HR',
+        icon: Users,
+        items: [
+            {
+                title: 'Dashboard',
+                href: '/hr',
+            },
+            {
+                title: 'Employees',
+                href: '/hr/employees',
+            },
+            {
+                title: 'Departments',
+                href: '/hr/departments',
+            },
+            {
+                title: 'Time & Attendance',
+                href: '/hr/time-logs',
+            },
+            {
+                title: 'Contracts',
+                href: '/hr/contracts',
+            },
+            {
+                title: 'Job Letters',
+                href: '/hr/job-letters',
+            },
+        ],
+    },
+    {
+        title: 'Finance',
+        icon: DollarSign,
+        items: [
+            {
+                title: 'Payroll',
+                href: '/payroll',
+            },
+            {
+                title: 'Loyalty Program',
+                href: '/loyalty',
+            },
+        ],
+    },
+    {
+        title: 'Reports',
+        href: '/reports',
+        icon: LineChart,
     },
 ];
 

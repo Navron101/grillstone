@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +23,7 @@ class OrderController extends Controller
             'items.*.variant_id'         => 'nullable|integer|exists:recipe_variants,id',
             'items.*.qty'                => 'required|integer|min:1',
             'discount_percent'           => 'nullable|numeric|min:0|max:50',
+            'loyalty_employee_id'        => 'nullable|integer|exists:loyalty_employees,id',
             'payment'                    => 'required|array',
             'payment.method'             => 'required|string', // Cash|Card|Digital
             'payment.tendered_cents'     => 'nullable|integer|min:0',
@@ -29,7 +31,8 @@ class OrderController extends Controller
         ]);
 
         return DB::transaction(function () use ($data) {
-            $taxRate    = 0.15;
+            $taxEnabled = Setting::get('tax_enabled', true);
+            $taxRate    = $taxEnabled ? (Setting::get('tax_rate', 15) / 100) : 0;
             $locationId = (int)($data['location_id'] ?? 1);
 
             // Resolve price for each line (variant price overrides product price)
@@ -73,24 +76,21 @@ class OrderController extends Controller
                 'meta'            => ['cashier' => auth()->user()->name ?? 'Cashier'],
             ]);
 
-            // Detect optional columns once
-            $orderItemsHasVariantId = Schema::hasColumn('order_items', 'variant_id');
-            $orderItemsHasMeta      = Schema::hasColumn('order_items', 'meta');
-
             foreach ($lines as $l) {
                 $payload = [
                     'order_id'         => $order->id,
-                    'product_id'       => $l['product']->id,
+                    'item_type'        => $l['product']->type ?? 'product',
+                    'item_id'          => $l['product']->id,
+                    'name'             => $l['product']->name,
                     'qty'              => $l['qty'],
-                    'price_cents'      => $l['price_cents'],
+                    'unit_price_cents' => $l['price_cents'],
                     'line_total_cents' => $l['line_total_cents'],
+                    'tax_rate'         => $taxRate,
                 ];
 
-                // Persist variant if your schema supports it
-                if ($orderItemsHasVariantId && !empty($l['variant_id'])) {
-                    $payload['variant_id'] = $l['variant_id'];
-                } elseif ($orderItemsHasMeta && !empty($l['variant_id'])) {
-                    $payload['meta'] = ['variant_id' => (int)$l['variant_id']];
+                // Add variant info to meta if exists
+                if (!empty($l['variant_id'])) {
+                    $payload['meta'] = json_encode(['variant_id' => (int)$l['variant_id']]);
                 }
 
                 OrderItem::create($payload);
@@ -130,6 +130,20 @@ class OrderController extends Controller
             $order->meta = $meta;
             $order->save();
 
+            // Create loyalty transaction if employee was provided
+            if (!empty($data['loyalty_employee_id'])) {
+                try {
+                    $loyaltyEmployee = \App\Models\LoyaltyEmployee::find($data['loyalty_employee_id']);
+                    if ($loyaltyEmployee && class_exists(\App\Services\LoyaltyService::class)) {
+                        $loyaltyService = app(\App\Services\LoyaltyService::class);
+                        $loyaltyService->applyDiscount($loyaltyEmployee, $order);
+                    }
+                } catch (\Throwable $e) {
+                    // Don't break checkout if loyalty fails - log it
+                    logger()->error('Loyalty transaction failed: '.$e->getMessage(), ['order_id' => $order->id]);
+                }
+            }
+
             return response()->json([
                 'order_no'     => $order->order_no,
                 'total_cents'  => $total,
@@ -154,8 +168,10 @@ class OrderController extends Controller
             return (int)$p->price_cents * (int)$l['qty'];
         });
 
+        $taxEnabled = Setting::get('tax_enabled', true);
+        $taxRate    = $taxEnabled ? (Setting::get('tax_rate', 15) / 100) : 0;
         $discount = (int) round($subtotal * (($data['discount_percent'] ?? 0) / 100));
-        $tax      = (int) round(($subtotal - $discount) * 0.15);
+        $tax      = (int) round(($subtotal - $discount) * $taxRate);
         $total    = (int) ($subtotal - $discount + $tax);
 
         $order = Order::create([
@@ -172,10 +188,13 @@ class OrderController extends Controller
             $p = Product::findOrFail($l['product_id']);
             OrderItem::create([
                 'order_id'         => $order->id,
-                'product_id'       => $p->id,
+                'item_type'        => $p->type ?? 'product',
+                'item_id'          => $p->id,
+                'name'             => $p->name,
                 'qty'              => (int)$l['qty'],
-                'price_cents'      => (int)$p->price_cents,
+                'unit_price_cents' => (int)$p->price_cents,
                 'line_total_cents' => (int)$p->price_cents * (int)$l['qty'],
+                'tax_rate'         => $taxRate,
             ]);
         }
 

@@ -149,6 +149,21 @@ class ReportsController extends Controller
             ->limit(20)
             ->get();
 
+        // Expenses Data
+        $totalExpenses = DB::table('expenses')
+            ->where('expense_date', '>=', $startDate->format('Y-m-d'))
+            ->where('expense_date', '<=', $endDate->format('Y-m-d'))
+            ->sum('amount_cents') ?? 0;
+
+        // Daily Expenses
+        $dailyExpenses = DB::table('expenses')
+            ->where('expense_date', '>=', $startDate->format('Y-m-d'))
+            ->where('expense_date', '<=', $endDate->format('Y-m-d'))
+            ->selectRaw('expense_date as date, SUM(amount_cents) as expenses_cents')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
         return response()->json([
             'overview' => [
                 'total_orders' => (int) ($salesData->total_orders ?? 0),
@@ -158,11 +173,16 @@ class ReportsController extends Controller
                 'avg_order_value' => (float) (($salesData->avg_order_cents ?? 0) / 100),
                 'total_tax' => (float) (($salesData->total_tax_cents ?? 0) / 100),
                 'total_discount' => (float) (($salesData->total_discount_cents ?? 0) / 100),
+                'total_expenses' => (float) ($totalExpenses / 100),
             ],
             'daily_sales' => $dailySales->map(fn($d) => [
                 'date' => $d->date,
                 'orders' => (int) $d->orders,
                 'revenue' => (float) ($d->revenue_cents / 100),
+            ]),
+            'daily_expenses' => $dailyExpenses->map(fn($e) => [
+                'date' => $e->date,
+                'expenses' => (float) ($e->expenses_cents / 100),
             ]),
             'top_sellers' => $topSellers->map(fn($p) => [
                 'id' => $p->id,

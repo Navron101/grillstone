@@ -119,8 +119,42 @@
             </div>
           </div>
 
+          <!-- Expenses Management Link -->
+          <div class="glass-effect rounded-2xl p-6 hover:shadow-xl transition-shadow border-2 border-purple-600">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i class="fas fa-money-bill-wave text-purple-600"></i>
+                  Expense Tracking
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Record and manage business expenses by category</p>
+              </div>
+              <a href="/reports/expenses" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-receipt"></i>
+                Manage Expenses
+              </a>
+            </div>
+          </div>
+
+          <!-- Expenses Report Link -->
+          <div class="glass-effect rounded-2xl p-6 hover:shadow-xl transition-shadow border-2 border-blue-600">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i class="fas fa-chart-pie text-blue-600"></i>
+                  Expenses Report
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Analyze expenses by category with detailed breakdowns</p>
+              </div>
+              <a href="/reports/expenses-report" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white rounded-lg font-semibold transition-all flex items-center gap-2">
+                <i class="fas fa-chart-line"></i>
+                View Report
+              </a>
+            </div>
+          </div>
+
           <!-- KPI Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- Total Revenue -->
             <div class="glass-effect rounded-2xl p-6 hover:shadow-xl transition-shadow">
               <div class="flex items-center justify-between">
@@ -180,6 +214,20 @@
                 </div>
               </div>
             </div>
+
+            <!-- Total Expenses -->
+            <div class="glass-effect rounded-2xl p-6 hover:shadow-xl transition-shadow">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 font-medium">Total Expenses</p>
+                  <p class="text-3xl font-bold text-gray-800 mt-2">JMD {{ nf(overview.total_expenses || 0) }}</p>
+                  <p class="text-xs text-purple-600 mt-1">Operating expenses</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-money-bill-wave text-purple-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Charts Row 1 -->
@@ -217,6 +265,16 @@
             </h3>
             <div class="h-80">
               <Line :data="profitLossChartData" :options="profitLossChartOptions" />
+            </div>
+          </div>
+
+          <!-- COGS vs Expenses vs Income Chart -->
+          <div class="glass-effect rounded-2xl p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+              <i class="fas fa-balance-scale text-purple-600 mr-2"></i>Income vs COGS vs Expenses
+            </h3>
+            <div class="h-80">
+              <Line :data="cogsVsExpensesChartData" :options="cogsVsExpensesChartOptions" />
             </div>
           </div>
 
@@ -374,8 +432,10 @@ const overview = ref({
   avg_order_value: 0,
   total_tax: 0,
   total_discount: 0,
+  total_expenses: 0,
 })
 const dailySales = ref<any[]>([])
+const dailyExpenses = ref<any[]>([])
 const topSellers = ref<any[]>([])
 const categoryBreakdown = ref<any[]>([])
 const lowStock = ref<any[]>([])
@@ -548,6 +608,116 @@ const profitLossChartOptions = {
   }
 }
 
+// COGS vs Expenses vs Income Chart
+const cogsVsExpensesChartData = computed(() => {
+  // Merge daily sales and expenses data
+  const allDates = [...new Set([
+    ...dailySales.value.map(d => d.date),
+    ...dailyExpenses.value.map(d => d.date)
+  ])].sort()
+
+  // Calculate daily COGS (estimate based on margin if not available per day)
+  const avgMargin = overview.value.total_revenue > 0
+    ? (overview.value.gross_profit / overview.value.total_revenue)
+    : 0.3
+
+  const incomeData = allDates.map(date => {
+    const sale = dailySales.value.find(s => s.date === date)
+    return sale ? sale.revenue : 0
+  })
+
+  const cogsData = allDates.map(date => {
+    const sale = dailySales.value.find(s => s.date === date)
+    return sale ? sale.revenue * (1 - avgMargin) : 0
+  })
+
+  const expensesData = allDates.map(date => {
+    const expense = dailyExpenses.value.find(e => e.date === date)
+    return expense ? expense.expenses : 0
+  })
+
+  const totalCostsData = allDates.map((date, index) => {
+    return cogsData[index] + expensesData[index]
+  })
+
+  return {
+    labels: allDates,
+    datasets: [
+      {
+        label: 'Income',
+        data: incomeData,
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 3,
+      },
+      {
+        label: 'COGS',
+        data: cogsData,
+        borderColor: 'rgb(249, 115, 22)',
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+      },
+      {
+        label: 'Expenses',
+        data: expensesData,
+        borderColor: 'rgb(168, 85, 247)',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+      },
+      {
+        label: 'Total Costs (COGS + Expenses)',
+        data: totalCostsData,
+        borderColor: 'rgb(239, 68, 68)',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        fill: false,
+        tension: 0.4,
+        borderWidth: 2,
+        borderDash: [5, 5],
+      }
+    ]
+  }
+})
+
+const cogsVsExpensesChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: true,
+      position: 'top' as const,
+      labels: {
+        usePointStyle: true,
+        padding: 15,
+      }
+    },
+    tooltip: {
+      mode: 'index' as const,
+      intersect: false,
+      callbacks: {
+        label: (context: any) => `${context.dataset.label}: JMD ${context.parsed.y.toLocaleString()}`
+      }
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: (value: any) => `JMD ${value.toLocaleString()}`
+      }
+    }
+  },
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  }
+}
+
 // Methods
 function nf(val: number): string {
   return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -582,6 +752,7 @@ async function loadData() {
     const data = await resp.json()
     overview.value = data.overview
     dailySales.value = data.daily_sales
+    dailyExpenses.value = data.daily_expenses || []
     topSellers.value = data.top_sellers
     categoryBreakdown.value = data.category_breakdown
     lowStock.value = data.low_stock

@@ -34,8 +34,7 @@ class DatabaseSeeder extends Seeder
 
         // 🔸 Call other seeders
         $this->call([
-            CategorySeeder::class,
-            ProductSeeder::class,
+            JamaicanRestaurantSeeder::class,
         ]);
     }
 }

@@ -21,4 +21,12 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
+
+    Route::get('settings/tax', function () {
+        return Inertia::render('settings/Tax');
+    })->name('tax');
+
+    Route::get('settings/hr', function () {
+        return Inertia::render('settings/HR');
+    })->name('hr');
 });

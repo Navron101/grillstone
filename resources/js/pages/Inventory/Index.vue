@@ -84,6 +84,36 @@
                 <span v-if="sidebarOpen" class="font-medium">Stocktake</span>
               </a>
             </li>
+            <li>
+              <a href="/inventory/waste" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-trash-alt text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Waste</span>
+              </a>
+            </li>
+            <li>
+              <a href="/reports/waste" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-chart-line text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Waste Reports</span>
+              </a>
+            </li>
+            <li>
+              <a href="/inventory/vendors" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-truck text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Vendors</span>
+              </a>
+            </li>
+            <li>
+              <a href="/inventory/purchase-orders" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-file-invoice text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Purchase Orders</span>
+              </a>
+            </li>
+            <li>
+              <a href="/inventory/invoices" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-receipt text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Invoices</span>
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -95,6 +125,58 @@
 
       <!-- Main Content -->
       <section class="flex-1 p-4 flex flex-col overflow-y-auto">
+        <!-- Featured Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <!-- OCR Invoice Scanning -->
+          <a href="/inventory/invoices/scan" class="glass-effect rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all border-2 border-blue-500 group">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i class="fas fa-camera text-white text-2xl"></i>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <i class="fas fa-sparkles text-blue-500"></i>
+                  Scan Invoice (OCR)
+                  <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">NEW</span>
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Upload receipt photos & auto-extract data with AI</p>
+                <div class="flex items-center gap-2 mt-2 text-xs text-blue-600">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Automatic data extraction</span>
+                  <i class="fas fa-check-circle ml-2"></i>
+                  <span>Confidence scoring</span>
+                </div>
+              </div>
+              <i class="fas fa-arrow-right text-blue-500 text-xl group-hover:translate-x-2 transition-transform"></i>
+            </div>
+          </a>
+
+          <!-- Quick Access Card -->
+          <div class="glass-effect rounded-2xl p-6 shadow-lg">
+            <h3 class="text-lg font-bold text-gray-800 mb-3">Quick Actions</h3>
+            <div class="space-y-2">
+              <a href="/inventory/grn" class="flex items-center gap-3 p-2 rounded-lg hover:bg-orange-50 transition-colors group">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-clipboard-check text-green-600"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-800 group-hover:text-orange-600">Receive Stock</p>
+                  <p class="text-xs text-gray-500">Record new deliveries</p>
+                </div>
+              </a>
+              <a href="/inventory/invoices" class="flex items-center gap-3 p-2 rounded-lg hover:bg-orange-50 transition-colors group">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-receipt text-purple-600"></i>
+                </div>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-800 group-hover:text-orange-600">Manage Invoices</p>
+                  <p class="text-xs text-gray-500">View all invoices</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <!-- Tab Navigation -->
         <div class="glass-effect rounded-2xl p-4 mb-4 shadow-lg">
           <div class="flex gap-2">

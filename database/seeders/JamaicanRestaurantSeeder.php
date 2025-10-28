@@ -18,6 +18,18 @@ class JamaicanRestaurantSeeder extends Seeder
         DB::table('order_items')->delete();
         DB::table('products')->delete();
         DB::table('categories')->delete();
+        DB::table('vendors')->delete();
+
+        // Ensure default location exists
+        if (!DB::table('locations')->where('id', 1)->exists()) {
+            DB::table('locations')->insert([
+                'id' => 1,
+                'name' => 'Main Location',
+                'type' => 'store',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         // === JAMAICAN CATEGORIES ===
         $categories = [
@@ -131,13 +143,14 @@ class JamaicanRestaurantSeeder extends Seeder
             ]);
             $ingredientIds[$ing['name']] = $id;
 
-            // Create initial inventory lot
+            // Create initial inventory lot with substantial stock
             DB::table('inventory_lots')->insert([
                 'product_id' => $id,
                 'location_id' => 1,
                 'lot_code' => 'INIT-' . $id,
-                'qty_on_hand' => 100,
+                'qty_on_hand' => 500, // Increased from 100 to ensure well-stocked
                 'unit_cost_cents' => $ing['cost_cents'],
+                'received_at' => now()->subDays(7), // Received a week ago
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -176,8 +189,9 @@ class JamaicanRestaurantSeeder extends Seeder
                 'product_id' => $id,
                 'location_id' => 1,
                 'lot_code' => 'BEV-' . $id,
-                'qty_on_hand' => 50,
+                'qty_on_hand' => 200, // Increased from 50 to ensure well-stocked
                 'unit_cost_cents' => $bev['cost'],
+                'received_at' => now()->subDays(7), // Received a week ago
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -604,11 +618,213 @@ class JamaicanRestaurantSeeder extends Seeder
             }
         }
 
+        // === VENDORS ===
+        $vendors = [
+            [
+                'name' => 'Caribbean Wholesale Ltd',
+                'contact_name' => 'Michael Brown',
+                'phone' => '876-555-0123',
+                'email' => 'orders@caribbeanwholesale.jm',
+                'notes' => 'Main supplier for proteins and provisions'
+            ],
+            [
+                'name' => 'Island Fresh Produce',
+                'contact_name' => 'Patricia Williams',
+                'phone' => '876-555-0456',
+                'email' => 'sales@islandfresh.jm',
+                'notes' => 'Fresh vegetables and ground provisions'
+            ],
+            [
+                'name' => 'Jamaica Beverage Distributors',
+                'contact_name' => 'David Thompson',
+                'phone' => '876-555-0789',
+                'email' => 'orders@jambev.jm',
+                'notes' => 'Beverages and canned goods'
+            ],
+            [
+                'name' => 'Tropical Spice Company',
+                'contact_name' => 'Sarah Campbell',
+                'phone' => '876-555-0321',
+                'email' => 'wholesale@tropicalspice.jm',
+                'notes' => 'Seasonings, spices, and condiments'
+            ],
+            [
+                'name' => 'Kingston Meats & Seafood',
+                'contact_name' => 'Mark Johnson',
+                'phone' => '876-555-0654',
+                'email' => 'sales@kingstonmeats.jm',
+                'notes' => 'Premium meats, fish, and oxtail'
+            ]
+        ];
+
+        foreach ($vendors as $vendor) {
+            DB::table('vendors')->insert([
+                'name' => $vendor['name'],
+                'contact_name' => $vendor['contact_name'],
+                'phone' => $vendor['phone'],
+                'email' => $vendor['email'],
+                'notes' => $vendor['notes'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // === EXPENSE CATEGORIES ===
+        $expenseCategories = [
+            ['name' => 'Accounting & Bookkeeping', 'description' => 'Professional accounting and bookkeeping services'],
+            ['name' => 'Bank Charges', 'description' => 'Bank fees and transaction charges'],
+            ['name' => 'Subscriptions', 'description' => 'Software subscriptions and memberships'],
+            ['name' => 'IT & Software Cost', 'description' => 'Technology and software expenses'],
+            ['name' => 'Security Surveillance', 'description' => 'Security system and monitoring costs'],
+            ['name' => 'Electricity', 'description' => 'Electrical utility bills'],
+            ['name' => 'Water', 'description' => 'Water utility bills'],
+            ['name' => 'Internet', 'description' => 'Internet service provider costs'],
+            ['name' => 'Gas', 'description' => 'Gas utility bills'],
+            ['name' => 'Staff Welfare', 'description' => 'Employee welfare and benefits'],
+            ['name' => 'Insurance', 'description' => 'Business insurance premiums'],
+            ['name' => 'Director 1 Fees', 'description' => 'Director 1 compensation'],
+            ['name' => 'Director 2 Fees', 'description' => 'Director 2 compensation'],
+            ['name' => 'Secretary Fees', 'description' => 'Secretary compensation'],
+            ['name' => 'Commercial Rent', 'description' => 'Monthly rent for business premises'],
+            ['name' => 'Transportation', 'description' => 'Transportation and delivery costs'],
+            ['name' => 'Miscellaneous', 'description' => 'Other miscellaneous expenses'],
+        ];
+
+        foreach ($expenseCategories as $category) {
+            DB::table('expense_categories')->insert([
+                'name' => $category['name'],
+                'description' => $category['description'],
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // === DEPARTMENTS ===
+        $departments = [
+            ['name' => 'Kitchen', 'description' => 'Food preparation and cooking', 'is_active' => true],
+            ['name' => 'Front of House', 'description' => 'Customer service and dining area', 'is_active' => true],
+            ['name' => 'Management', 'description' => 'Restaurant management', 'is_active' => true],
+            ['name' => 'Cleaning', 'description' => 'Cleaning and maintenance', 'is_active' => true],
+        ];
+
+        $departmentIds = [];
+        foreach ($departments as $dept) {
+            $departmentIds[$dept['name']] = DB::table('departments')->insertGetId([
+                'name' => $dept['name'],
+                'description' => $dept['description'],
+                'is_active' => $dept['is_active'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // === EMPLOYEES ===
+        $employees = [
+            [
+                'employee_number' => 'EMP001',
+                'first_name' => 'Marcus',
+                'last_name' => 'Brown',
+                'email' => 'marcus.brown@grillstone.jm',
+                'phone' => '876-555-0101',
+                'address' => '15 Hope Road, Kingston 6',
+                'city' => 'Kingston',
+                'parish' => 'St. Andrew',
+                'department_id' => $departmentIds['Kitchen'],
+                'position' => 'Head Chef',
+                'hire_date' => '2023-01-15',
+                'employment_type' => 'full-time',
+                'employment_status' => 'active',
+                'is_salaried' => true,
+                'salary_amount' => 120000.00,
+            ],
+            [
+                'employee_number' => 'EMP002',
+                'first_name' => 'Keisha',
+                'last_name' => 'Williams',
+                'email' => 'keisha.williams@grillstone.jm',
+                'phone' => '876-555-0102',
+                'address' => '42 Barbican Road, Kingston 6',
+                'city' => 'Kingston',
+                'parish' => 'St. Andrew',
+                'department_id' => $departmentIds['Front of House'],
+                'position' => 'Server',
+                'hire_date' => '2023-03-20',
+                'employment_type' => 'full-time',
+                'employment_status' => 'active',
+                'is_salaried' => false,
+                'hourly_rate' => 650.00,
+            ],
+            [
+                'employee_number' => 'EMP003',
+                'first_name' => 'Andre',
+                'last_name' => 'Thompson',
+                'email' => 'andre.thompson@grillstone.jm',
+                'phone' => '876-555-0103',
+                'address' => '28 Constant Spring Road, Kingston 10',
+                'city' => 'Kingston',
+                'parish' => 'St. Andrew',
+                'department_id' => $departmentIds['Kitchen'],
+                'position' => 'Line Cook',
+                'hire_date' => '2023-06-01',
+                'employment_type' => 'full-time',
+                'employment_status' => 'active',
+                'is_salaried' => true,
+                'salary_amount' => 80000.00,
+            ],
+            [
+                'employee_number' => 'EMP004',
+                'first_name' => 'Shanique',
+                'last_name' => 'Davis',
+                'email' => 'shanique.davis@grillstone.jm',
+                'phone' => '876-555-0104',
+                'address' => '67 Half Way Tree Road, Kingston 5',
+                'city' => 'Kingston',
+                'parish' => 'St. Andrew',
+                'department_id' => $departmentIds['Front of House'],
+                'position' => 'Hostess',
+                'hire_date' => '2024-01-10',
+                'employment_type' => 'part-time',
+                'employment_status' => 'active',
+                'is_salaried' => false,
+                'hourly_rate' => 600.00,
+            ],
+            [
+                'employee_number' => 'EMP005',
+                'first_name' => 'Christopher',
+                'last_name' => 'Campbell',
+                'email' => 'christopher.campbell@grillstone.jm',
+                'phone' => '876-555-0105',
+                'address' => '10 Trafalgar Road, Kingston 10',
+                'city' => 'Kingston',
+                'parish' => 'St. Andrew',
+                'department_id' => $departmentIds['Management'],
+                'position' => 'Restaurant Manager',
+                'hire_date' => '2022-11-01',
+                'employment_type' => 'full-time',
+                'employment_status' => 'active',
+                'is_salaried' => true,
+                'salary_amount' => 150000.00,
+            ],
+        ];
+
+        foreach ($employees as $emp) {
+            DB::table('employees')->insert(array_merge($emp, [
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+
         $this->command->info('✅ Jamaican restaurant data seeded successfully!');
         $this->command->info('🇯🇲 Summary:');
         $this->command->info('   - Categories: ' . count($categories));
         $this->command->info('   - Ingredients: ' . count($ingredients));
         $this->command->info('   - Beverages: ' . count($beverages));
         $this->command->info('   - Dishes: ' . count($dishes));
+        $this->command->info('   - Vendors: ' . count($vendors));
+        $this->command->info('   - Expense Categories: ' . count($expenseCategories));
+        $this->command->info('   - Departments: ' . count($departments));
+        $this->command->info('   - Employees: ' . count($employees));
     }
 }

@@ -13,9 +13,9 @@ return new class extends Migration
             $table->string('invoice_number')->nullable();
             $table->string('supplier_name')->nullable();
             $table->date('invoice_date')->nullable();
-            $table->string('original_filename');
-            $table->string('file_path');
-            $table->enum('status', ['pending', 'processed', 'approved', 'rejected'])->default('pending');
+            $table->string('original_filename')->nullable();
+            $table->string('file_path')->nullable();
+            $table->enum('status', ['pending', 'processed', 'approved', 'rejected', 'paid'])->default('pending');
             $table->json('ocr_raw_data')->nullable(); // Raw OCR response
             $table->json('extracted_items')->nullable(); // Structured invoice items
             $table->unsignedBigInteger('total_amount_cents')->nullable();

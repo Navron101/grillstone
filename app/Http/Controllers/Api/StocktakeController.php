@@ -122,7 +122,7 @@ class StocktakeController extends Controller
         $data = $request->validate([
             'lines' => 'required|array',
             'lines.*.id' => 'required|integer|exists:stocktake_lines,id',
-            'lines.*.actual_qty' => 'required|numeric|min:0',
+            'lines.*.actual_qty' => 'nullable|numeric|min:0',
             'lines.*.notes' => 'nullable|string',
         ]);
 
@@ -131,6 +131,11 @@ class StocktakeController extends Controller
                 $line = StocktakeLine::where('id', $lineData['id'])
                     ->where('stocktake_id', $stocktake->id)
                     ->firstOrFail();
+
+                // If actual_qty is not provided or empty, assume it equals system_qty (no variance)
+                if (!isset($lineData['actual_qty']) || $lineData['actual_qty'] === '' || $lineData['actual_qty'] === null) {
+                    $lineData['actual_qty'] = $line->system_qty;
+                }
 
                 $line->update([
                     'actual_qty' => $lineData['actual_qty'],

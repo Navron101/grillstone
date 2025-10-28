@@ -36,6 +36,8 @@
             <li><a href="/inventory/dishes" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors bg-orange-600 text-white"><i class="fas fa-utensils text-lg text-white"></i><span v-if="sidebarOpen" class="font-medium">Dishes</span></a></li>
             <li><a href="/inventory/grn" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50"><i class="fas fa-clipboard-check text-lg text-gray-600"></i><span v-if="sidebarOpen" class="font-medium">Receive Stock</span></a></li>
             <li><a href="/inventory/stocktake" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50"><i class="fas fa-clipboard-list text-lg text-gray-600"></i><span v-if="sidebarOpen" class="font-medium">Stocktake</span></a></li>
+            <li><a href="/inventory/waste" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50"><i class="fas fa-trash-alt text-lg text-gray-600"></i><span v-if="sidebarOpen" class="font-medium">Waste</span></a></li>
+            <li><a href="/reports/waste" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50"><i class="fas fa-chart-line text-lg text-gray-600"></i><span v-if="sidebarOpen" class="font-medium">Waste Reports</span></a></li>
           </ul>
         </div>
       </nav>

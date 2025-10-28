@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -9,14 +8,6 @@ import HeadingSmall from '@/components/HeadingSmall.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { type BreadcrumbItem } from '@/types';
-
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Password settings',
-        href: '/settings/password',
-    },
-];
 
 const passwordInput = ref<HTMLInputElement | null>(null);
 const currentPasswordInput = ref<HTMLInputElement | null>(null);
@@ -51,10 +42,14 @@ const updatePassword = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Password settings" />
+    <Head title="Password settings" />
 
-        <SettingsLayout>
+    <SettingsLayout>
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Password Settings</h1>
+                <p class="text-sm text-gray-600 mt-1">Update your password to keep your account secure</p>
+            </div>
+
             <div class="space-y-6">
                 <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
 
@@ -114,6 +109,5 @@ const updatePassword = () => {
                     </div>
                 </form>
             </div>
-        </SettingsLayout>
-    </AppLayout>
+    </SettingsLayout>
 </template>

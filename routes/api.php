@@ -111,6 +111,31 @@ Route::post('/employees', [EmployeeController::class, 'store']);
 Route::put('/employees/{id}', [EmployeeController::class, 'update']);
 Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
 
+// Employment Contracts
+use App\Http\Controllers\Api\EmploymentContractController;
+
+Route::get('/employment-contracts', [EmploymentContractController::class, 'index']);
+Route::get('/employment-contracts/{id}', [EmploymentContractController::class, 'show']);
+Route::post('/employment-contracts', [EmploymentContractController::class, 'store']);
+Route::delete('/employment-contracts/{id}', [EmploymentContractController::class, 'destroy']);
+Route::post('/employment-contracts/{id}/send-email', [EmploymentContractController::class, 'sendEmail']);
+Route::post('/employment-contracts/{id}/update-status', [EmploymentContractController::class, 'updateStatus']);
+Route::get('/employment-contracts/{id}/download-pdf', [EmploymentContractController::class, 'downloadPdf']);
+Route::get('/employment-contracts/{id}/download-word', [EmploymentContractController::class, 'downloadWord']);
+
+// Job Letters
+use App\Http\Controllers\Api\JobLetterController;
+
+Route::get('/job-letters', [JobLetterController::class, 'index']);
+Route::get('/job-letters/search-employees', [JobLetterController::class, 'searchEmployees']);
+Route::get('/job-letters/{id}', [JobLetterController::class, 'show']);
+Route::post('/job-letters', [JobLetterController::class, 'store']);
+Route::delete('/job-letters/{id}', [JobLetterController::class, 'destroy']);
+Route::post('/job-letters/{id}/send-email', [JobLetterController::class, 'sendEmail']);
+Route::post('/job-letters/{id}/update-status', [JobLetterController::class, 'updateStatus']);
+Route::get('/job-letters/{id}/download-pdf', [JobLetterController::class, 'downloadPdf']);
+Route::get('/job-letters/{id}/download-word', [JobLetterController::class, 'downloadWord']);
+
 // Time Logs
 Route::get('/time-logs', [TimeLogController::class, 'index']);
 Route::post('/time-logs', [TimeLogController::class, 'store']);
@@ -180,3 +205,122 @@ Route::put('/invoices/{invoice}', [InvoiceOcrController::class, 'update']);
 Route::delete('/invoices/{invoice}', [InvoiceOcrController::class, 'destroy']);
 Route::post('/invoices/{invoice}/create-grn', [InvoiceOcrController::class, 'createGoodsReceipt']);
 Route::get('/invoices/{invoice}/match-products', [InvoiceOcrController::class, 'matchProducts']);
+
+// ----- Waste Management -----
+use App\Http\Controllers\Api\WasteController;
+use App\Http\Controllers\Api\WasteReportController;
+
+Route::get('/waste', [WasteController::class, 'index']);
+Route::post('/waste', [WasteController::class, 'store']);
+Route::get('/waste/{id}', [WasteController::class, 'show']);
+Route::put('/waste/{id}', [WasteController::class, 'update']);
+Route::delete('/waste/{id}', [WasteController::class, 'destroy']);
+
+// Waste Reports
+Route::get('/waste-reports/daily', [WasteReportController::class, 'daily']);
+Route::get('/waste-reports/trends', [WasteReportController::class, 'trends']);
+Route::get('/waste-reports/top-wasted', [WasteReportController::class, 'topWasted']);
+Route::get('/waste-reports/by-reason', [WasteReportController::class, 'byReason']);
+Route::get('/waste-reports/summary', [WasteReportController::class, 'summary']);
+
+// ----- Settings -----
+use App\Http\Controllers\Api\SettingsController;
+
+Route::get('/settings', [SettingsController::class, 'index']);
+Route::get('/settings/{key}', [SettingsController::class, 'show']);
+Route::put('/settings/{key}', [SettingsController::class, 'update']);
+Route::post('/settings/bulk', [SettingsController::class, 'updateMultiple']);
+Route::post('/settings/signature/upload', [SettingsController::class, 'uploadSignature']);
+Route::delete('/settings/signature', [SettingsController::class, 'deleteSignature']);
+
+// ----- Vendors -----
+use App\Http\Controllers\Api\VendorController;
+
+Route::get('/vendors', [VendorController::class, 'index']);
+Route::get('/vendors/{id}', [VendorController::class, 'show']);
+Route::post('/vendors', [VendorController::class, 'store']);
+Route::put('/vendors/{id}', [VendorController::class, 'update']);
+Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);
+
+// ----- Purchase Orders -----
+use App\Http\Controllers\Api\PurchaseOrderController;
+
+Route::get('/purchase-orders', [PurchaseOrderController::class, 'index']);
+Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show']);
+Route::post('/purchase-orders', [PurchaseOrderController::class, 'store']);
+Route::put('/purchase-orders/{id}', [PurchaseOrderController::class, 'update']);
+Route::delete('/purchase-orders/{id}', [PurchaseOrderController::class, 'destroy']);
+Route::post('/purchase-orders/{id}/status', [PurchaseOrderController::class, 'changeStatus']);
+
+// ----- Invoices (Manual) -----
+use App\Http\Controllers\Api\InvoiceController;
+
+Route::get('/invoices-manual', [InvoiceController::class, 'index']);
+Route::get('/invoices-manual/{id}', [InvoiceController::class, 'show']);
+Route::post('/invoices-manual', [InvoiceController::class, 'store']);
+Route::put('/invoices-manual/{id}', [InvoiceController::class, 'update']);
+Route::delete('/invoices-manual/{id}', [InvoiceController::class, 'destroy']);
+Route::post('/invoices-manual/{id}/approve', [InvoiceController::class, 'approve']);
+Route::post('/invoices-manual/{id}/reject', [InvoiceController::class, 'reject']);
+Route::post('/invoices-manual/{id}/mark-paid', [InvoiceController::class, 'markAsPaid']);
+
+// OCR Invoice Processing
+Route::post('/invoices/upload-scan', [InvoiceController::class, 'uploadAndScan']);
+Route::get('/invoices/pending-review', [InvoiceController::class, 'pendingReview']);
+Route::post('/invoices/{id}/review-update', [InvoiceController::class, 'updateAfterReview']);
+
+// ----- Expense Categories -----
+use App\Http\Controllers\Api\ExpenseCategoryController;
+
+Route::get('/expense-categories', [ExpenseCategoryController::class, 'index']);
+Route::get('/expense-categories/{id}', [ExpenseCategoryController::class, 'show']);
+Route::post('/expense-categories', [ExpenseCategoryController::class, 'store']);
+Route::put('/expense-categories/{id}', [ExpenseCategoryController::class, 'update']);
+Route::delete('/expense-categories/{id}', [ExpenseCategoryController::class, 'destroy']);
+
+// ----- Expenses -----
+use App\Http\Controllers\Api\ExpenseController;
+
+Route::get('/expenses', [ExpenseController::class, 'index']);
+Route::get('/expenses/{id}', [ExpenseController::class, 'show']);
+Route::post('/expenses', [ExpenseController::class, 'store']);
+Route::put('/expenses/{id}', [ExpenseController::class, 'update']);
+Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy']);
+Route::get('/expenses-report', [ExpenseController::class, 'report']);
+
+// ----- Loyalty Program -----
+use App\Http\Controllers\Api\LoyaltyCompanyController;
+use App\Http\Controllers\Api\LoyaltyEmployeeController;
+use App\Http\Controllers\Api\LoyaltyController;
+use App\Http\Controllers\Api\LoyaltySettlementController;
+
+// Loyalty Companies
+Route::get('/loyalty/companies', [LoyaltyCompanyController::class, 'index']);
+Route::get('/loyalty/companies/{loyaltyCompany}', [LoyaltyCompanyController::class, 'show']);
+Route::post('/loyalty/companies', [LoyaltyCompanyController::class, 'store']);
+Route::put('/loyalty/companies/{loyaltyCompany}', [LoyaltyCompanyController::class, 'update']);
+Route::delete('/loyalty/companies/{loyaltyCompany}', [LoyaltyCompanyController::class, 'destroy']);
+
+// Loyalty Employees
+Route::get('/loyalty/employees', [LoyaltyEmployeeController::class, 'index']);
+Route::get('/loyalty/employees/{loyaltyEmployee}', [LoyaltyEmployeeController::class, 'show']);
+Route::post('/loyalty/employees', [LoyaltyEmployeeController::class, 'store']);
+Route::put('/loyalty/employees/{loyaltyEmployee}', [LoyaltyEmployeeController::class, 'update']);
+Route::delete('/loyalty/employees/{loyaltyEmployee}', [LoyaltyEmployeeController::class, 'destroy']);
+
+// POS Loyalty Operations
+Route::post('/loyalty/lookup', [LoyaltyController::class, 'lookup']);
+Route::post('/loyalty/calculate-discount', [LoyaltyController::class, 'calculateDiscount']);
+Route::post('/loyalty/apply-discount', [LoyaltyController::class, 'applyDiscount']);
+
+// Loyalty Settlements
+Route::get('/loyalty/settlements', [LoyaltySettlementController::class, 'index']);
+Route::get('/loyalty/settlements/pending-transactions', [LoyaltySettlementController::class, 'pendingTransactions']);
+Route::get('/loyalty/settlements/{loyaltySettlement}', [LoyaltySettlementController::class, 'show']);
+Route::get('/loyalty/settlements/{loyaltySettlement}/pdf', [LoyaltySettlementController::class, 'exportPdf']);
+Route::get('/loyalty/settlements/{loyaltySettlement}/excel', [LoyaltySettlementController::class, 'exportExcel']);
+Route::post('/loyalty/settlements/generate', [LoyaltySettlementController::class, 'generate']);
+Route::post('/loyalty/settlements/{loyaltySettlement}/finalize', [LoyaltySettlementController::class, 'finalize']);
+Route::post('/loyalty/settlements/{loyaltySettlement}/mark-sent', [LoyaltySettlementController::class, 'markAsSent']);
+Route::post('/loyalty/settlements/{loyaltySettlement}/record-payment', [LoyaltySettlementController::class, 'recordPayment']);
+Route::delete('/loyalty/settlements/{loyaltySettlement}', [LoyaltySettlementController::class, 'destroy']);

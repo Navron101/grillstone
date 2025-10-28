@@ -56,15 +56,45 @@
 
         <div class="px-2">
           <ul class="mt-1 space-y-1">
+            <!-- POS Dropdown -->
             <li>
-              <a :href="posHref"
-                 class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                 :class="isActive(posHref)
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-cash-register text-lg', isActive(posHref) ? 'text-white' : 'text-gray-600']"></i>
+              <button @click="posMenuOpen = !posMenuOpen"
+                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
+                      :class="isActive('/pos') || isActive('/settlements')
+                        ? 'bg-orange-600 text-white'
+                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
+                <i :class="['fas fa-cash-register text-lg', (isActive('/pos') || isActive('/settlements')) ? 'text-white' : 'text-gray-600']"></i>
                 <span v-if="sidebarOpen" class="font-medium">POS</span>
-              </a>
+                <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', posMenuOpen ? 'rotate-180' : '']"></i>
+              </button>
+
+              <!-- POS Submenu -->
+              <ul v-if="posMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
+                <li>
+                  <a href="/pos" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
+                    <i class="fas fa-store text-xs"></i>
+                    <span>Point of Sale</span>
+                  </a>
+                </li>
+                <li>
+                  <button @click="showPayoutModal = true" class="w-full flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
+                    <i class="fas fa-money-bill-transfer text-xs"></i>
+                    <span>Payout</span>
+                  </button>
+                </li>
+                <li>
+                  <button @click="showCloseTillModal = true" class="w-full flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-white bg-green-500 hover:bg-green-600">
+                    <i class="fas fa-cash-register text-xs"></i>
+                    <span>Close Till</span>
+                  </button>
+                </li>
+                <li>
+                  <a href="/settlements" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
+                    <i class="fas fa-file-invoice-dollar text-xs"></i>
+                    <span>Settlements</span>
+                  </a>
+                </li>
+              </ul>
             </li>
 
             <li>
@@ -89,20 +119,26 @@
               </a>
             </li>
 
-            <!-- HR / Payroll Dropdown -->
+            <!-- HR Dropdown -->
             <li>
               <button @click="hrMenuOpen = !hrMenuOpen"
                       class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                      :class="isActive('/hr') || isActive('/payroll')
+                      :class="isActive('/hr')
                         ? 'bg-orange-600 text-white'
                         : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-users text-lg', (isActive('/hr') || isActive('/payroll')) ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">HR / Payroll</span>
+                <i :class="['fas fa-users text-lg', isActive('/hr') ? 'text-white' : 'text-gray-600']"></i>
+                <span v-if="sidebarOpen" class="font-medium">HR</span>
                 <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', hrMenuOpen ? 'rotate-180' : '']"></i>
               </button>
 
               <!-- HR Submenu -->
               <ul v-if="hrMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
+                <li>
+                  <a href="/hr" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
+                    <i class="fas fa-home text-xs"></i>
+                    <span>Dashboard</span>
+                  </a>
+                </li>
                 <li>
                   <a href="/hr/employees" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
                     <i class="fas fa-user-tie text-xs"></i>
@@ -127,46 +163,36 @@
                     <span>Clock In/Out</span>
                   </a>
                 </li>
+              </ul>
+            </li>
+
+            <!-- Finance Dropdown -->
+            <li>
+              <button @click="financeMenuOpen = !financeMenuOpen"
+                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
+                      :class="isActive('/payroll') || isActive('/loyalty')
+                        ? 'bg-orange-600 text-white'
+                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
+                <i :class="['fas fa-dollar-sign text-lg', (isActive('/payroll') || isActive('/loyalty')) ? 'text-white' : 'text-gray-600']"></i>
+                <span v-if="sidebarOpen" class="font-medium">Finance</span>
+                <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', financeMenuOpen ? 'rotate-180' : '']"></i>
+              </button>
+
+              <!-- Finance Submenu -->
+              <ul v-if="financeMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
                 <li>
                   <a href="/payroll" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
                     <i class="fas fa-money-check-alt text-xs"></i>
                     <span>Payroll</span>
                   </a>
                 </li>
+                <li>
+                  <a href="/loyalty" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
+                    <i class="fas fa-gift text-xs"></i>
+                    <span>Loyalty Program</span>
+                  </a>
+                </li>
               </ul>
-            </li>
-
-            <li>
-              <button @click="comingSoon('Menu Updates')"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-700">
-                <i class="fas fa-utensils text-lg text-gray-600"></i>
-                <span v-if="sidebarOpen" class="font-medium">Menu Updates</span>
-              </button>
-            </li>
-
-            <!-- Till Management Section -->
-            <li class="pt-2 mt-2 border-t border-gray-200">
-              <a href="/settlements"
-                 class="flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
-                <i class="fas fa-history text-lg text-gray-600"></i>
-                <span v-if="sidebarOpen" class="font-medium">Settlements</span>
-              </a>
-            </li>
-
-            <li>
-              <button @click="showPayoutModal = true"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
-                <i class="fas fa-money-bill-transfer text-lg text-gray-600"></i>
-                <span v-if="sidebarOpen" class="font-medium">Payout</span>
-              </button>
-            </li>
-
-            <li>
-              <button @click="showCloseTillModal = true"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-white bg-green-600 hover:bg-green-700 transition-colors">
-                <i class="fas fa-cash-register text-lg text-white"></i>
-                <span v-if="sidebarOpen" class="font-medium font-bold">Close Till</span>
-              </button>
             </li>
           </ul>
         </div>
@@ -242,13 +268,31 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <button @click="applyDiscount" class="bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg font-medium">
+            <div class="grid grid-cols-3 gap-2">
+              <button @click="showLoyaltyModal = true" class="bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-medium text-sm">
+                <i class="fas fa-gift mr-1"></i> Loyalty
+              </button>
+              <button @click="applyDiscount" class="bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg font-medium text-sm">
                 <i class="fas fa-percentage mr-1"></i> Discount
               </button>
-              <button @click="addNote" class="bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-medium">
+              <button @click="addNote" class="bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-medium text-sm">
                 <i class="fas fa-sticky-note mr-1"></i> Note
               </button>
+            </div>
+
+            <!-- Loyalty Customer Info -->
+            <div v-if="loyaltyEmployee" class="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-xs text-purple-600 font-semibold">LOYALTY CUSTOMER</div>
+                  <div class="font-medium text-gray-900">{{ loyaltyEmployee.name }}</div>
+                  <div class="text-xs text-gray-600">{{ loyaltyEmployee.company }}</div>
+                  <div class="text-xs text-purple-700 font-semibold mt-1">{{ loyaltyEmployee.discount }}% Discount Applied</div>
+                </div>
+                <button @click="removeLoyalty" class="text-red-500 hover:text-red-700 text-sm">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -876,6 +920,95 @@
       </div>
     </div>
   </div>
+
+  <!-- Loyalty Lookup Modal -->
+  <div v-if="showLoyaltyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h3 class="text-xl font-bold mb-4 text-purple-700">
+        <i class="fas fa-gift mr-2"></i>Loyalty Customer Lookup
+      </h3>
+
+      <div v-if="!loyaltySearchResult">
+        <p class="text-sm text-gray-600 mb-4">Enter customer's phone number or email address</p>
+
+        <input
+          v-model="loyaltySearchQuery"
+          type="text"
+          placeholder="Phone or email..."
+          class="w-full px-4 py-3 border rounded-lg mb-4 text-lg"
+          @keyup.enter="searchLoyaltyCustomer"
+        />
+
+        <div v-if="loyaltySearchError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {{ loyaltySearchError }}
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            @click="showLoyaltyModal = false; loyaltySearchQuery = ''; loyaltySearchError = ''"
+            class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            @click="searchLoyaltyCustomer"
+            :disabled="!loyaltySearchQuery || loyaltySearching"
+            class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+          >
+            {{ loyaltySearching ? 'Searching...' : 'Search' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="text-xs text-purple-600 font-semibold">CUSTOMER FOUND</div>
+              <div class="text-lg font-bold text-gray-900">{{ loyaltySearchResult.employee.name }}</div>
+              <div class="text-sm text-gray-600">{{ loyaltySearchResult.employee.company.name }}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-purple-700">{{ loyaltySearchResult.employee.company.discount_percentage }}%</div>
+              <div class="text-xs text-purple-600">DISCOUNT</div>
+            </div>
+          </div>
+
+          <div class="text-xs text-gray-600 space-y-1">
+            <div><i class="fas fa-envelope mr-2"></i>{{ loyaltySearchResult.employee.email }}</div>
+            <div><i class="fas fa-phone mr-2"></i>{{ loyaltySearchResult.employee.phone }}</div>
+          </div>
+
+          <div v-if="loyaltySearchResult.employee.monthly_summary" class="mt-3 pt-3 border-t border-purple-200 text-xs">
+            <div class="font-semibold text-purple-700 mb-1">This Month's Usage:</div>
+            <div class="flex justify-between">
+              <span>Employee Total:</span>
+              <span class="font-semibold">${{ loyaltySearchResult.employee.monthly_summary.employee_monthly_total || 0 }}</span>
+            </div>
+            <div v-if="loyaltySearchResult.employee.monthly_summary.employee_monthly_cap" class="flex justify-between text-gray-600">
+              <span>Monthly Cap:</span>
+              <span>${{ loyaltySearchResult.employee.monthly_summary.employee_monthly_cap }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            @click="loyaltySearchResult = null; loyaltySearchQuery = ''"
+            class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+          >
+            Search Again
+          </button>
+          <button
+            @click="applyLoyaltyDiscount"
+            class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+          >
+            Apply Discount
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -888,17 +1021,41 @@ type PageProps = { cashier: string; tableNumber: number; taxRate: number }
 const page = usePage<PageProps>()
 const cashier = page.props.cashier ?? 'Cashier'
 const tableNumber = page.props.tableNumber ?? 1
-const taxRate = page.props.taxRate ?? 0.15
+const taxRate = ref(page.props.taxRate ?? 0.15)
+const taxEnabled = ref(true)
 const locationId = 1
+
+// Load tax settings from API
+async function loadTaxSettings() {
+  try {
+    const resp = await fetch('/api/settings')
+    if (resp.ok) {
+      const data = await resp.json()
+      taxEnabled.value = data.settings.tax_enabled?.value ?? true
+      taxRate.value = (data.settings.tax_rate?.value ?? 15) / 100
+    }
+  } catch (e) {
+    console.error('Failed to load tax settings:', e)
+  }
+}
 
 // ---- Utilities
 const nf = (n:number) => n.toLocaleString()
 
 // ---- Sidebar
 const sidebarOpen = ref(true)
+const posMenuOpen = ref(false)
 const hrMenuOpen = ref(false)
+const financeMenuOpen = ref(false)
 function toggleSidebar(){ sidebarOpen.value = !sidebarOpen.value }
-onMounted(() => { const saved = localStorage.getItem('sidebarOpen'); if (saved!==null) sidebarOpen.value = saved === '1' })
+onMounted(() => {
+  const saved = localStorage.getItem('sidebarOpen')
+  if (saved!==null) sidebarOpen.value = saved === '1'
+  // Auto-open POS menu if on POS or settlements page
+  if (window.location.pathname === '/pos' || window.location.pathname.startsWith('/settlements')) {
+    posMenuOpen.value = true
+  }
+})
 watch(sidebarOpen, v => localStorage.setItem('sidebarOpen', v ? '1' : '0'))
 
 // ---- Routes helpers (works with or without Ziggy)
@@ -922,6 +1079,71 @@ const logout = () => { try { // @ts-ignore
 // ---- Clock
 const currentTime = ref(''); function tick(){ currentTime.value = new Date().toLocaleTimeString() }
 onMounted(()=>{ tick(); setInterval(tick,1000) })
+
+// ---- Loyalty Program
+const showLoyaltyModal = ref(false)
+const loyaltySearchQuery = ref('')
+const loyaltySearchResult = ref<any>(null)
+const loyaltySearchError = ref('')
+const loyaltySearching = ref(false)
+const loyaltyEmployee = ref<any>(null)
+
+async function searchLoyaltyCustomer() {
+  if (!loyaltySearchQuery.value.trim()) return
+
+  loyaltySearching.value = true
+  loyaltySearchError.value = ''
+
+  try {
+    const res = await fetch('/api/loyalty/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: loyaltySearchQuery.value.trim() })
+    })
+
+    if (res.ok) {
+      loyaltySearchResult.value = await res.json()
+    } else {
+      const error = await res.json()
+      loyaltySearchError.value = error.message || 'Customer not found'
+      loyaltySearchResult.value = null
+    }
+  } catch (error) {
+    loyaltySearchError.value = 'Error searching for customer'
+    loyaltySearchResult.value = null
+  } finally {
+    loyaltySearching.value = false
+  }
+}
+
+function applyLoyaltyDiscount() {
+  if (!loyaltySearchResult.value) return
+
+  const employee = loyaltySearchResult.value.employee
+  loyaltyEmployee.value = {
+    id: employee.id,
+    name: employee.name,
+    company: employee.company.name,
+    discount: employee.company.discount_percentage
+  }
+
+  // Apply the discount percentage
+  currentDiscount.value = employee.company.discount_percentage
+
+  // Close modal and reset
+  showLoyaltyModal.value = false
+  loyaltySearchQuery.value = ''
+  loyaltySearchResult.value = null
+  loyaltySearchError.value = ''
+
+  toast('Loyalty Applied', `${employee.company.discount_percentage}% discount for ${employee.name}`, 'success')
+}
+
+function removeLoyalty() {
+  loyaltyEmployee.value = null
+  currentDiscount.value = 0
+  toast('Loyalty Removed', 'Loyalty discount has been removed', 'info')
+}
 
 // ---- Till Management
 const showPayoutModal = ref(false)
@@ -1066,6 +1288,7 @@ async function loadProducts(){
 
 onMounted(() => {
   loadProducts()
+  loadTaxSettings()
   // Load pinned items from localStorage
   try {
     const saved = localStorage.getItem('pinnedItems')
@@ -1074,6 +1297,14 @@ onMounted(() => {
     }
   } catch (e) {
     console.error('Failed to load pinned items', e)
+  }
+
+  // Check URL hash and open appropriate modal
+  const hash = window.location.hash.substring(1)
+  if (hash === 'payout') {
+    showPayoutModal.value = true
+  } else if (hash === 'close-till') {
+    showCloseTillModal.value = true
   }
 })
 
@@ -1305,13 +1536,16 @@ function updateQuantity(i:number, d:number){
   it.qty+=d; if(it.qty<=0)cart.value.splice(i,1)
 }
 function removeFromCart(i:number){ const it=cart.value[i]; cart.value.splice(i,1); toast('Removed', `${it.name} removed`, 'warning') }
-function clearCart(){ if(!cart.value.length) return; if(confirm('Clear entire cart?')){ cart.value=[]; currentDiscount.value=0 } }
+function clearCart(){ if(!cart.value.length) return; if(confirm('Clear entire cart?')){ cart.value=[]; currentDiscount.value=0; loyaltyEmployee.value=null } }
 
 // ---- Totals
 const currentDiscount = ref(0)
 const subtotal = computed(()=> cart.value.reduce((s,i)=>s+i.price*i.qty,0))
 const discountAmount = computed(()=> Math.round(subtotal.value * (currentDiscount.value/100)))
-const tax = computed(()=> Math.round((subtotal.value - discountAmount.value) * taxRate))
+const tax = computed(()=> {
+  if (!taxEnabled.value) return 0
+  return Math.round((subtotal.value - discountAmount.value) * taxRate.value)
+})
 const total = computed(()=> subtotal.value + tax.value - discountAmount.value)
 
 // ---- Actions
@@ -1440,6 +1674,7 @@ async function processPayment(){
         qty: i.qty,
       })),
       discount_percent: currentDiscount.value,
+      loyalty_employee_id: loyaltyEmployee.value?.id || null,
       payment: {
         method: methodMap[paymentMethod.value] || 'cash',
         tendered_cents: Math.round((tendered.value ?? total.value) * 100),
@@ -1488,7 +1723,7 @@ async function processPayment(){
       discount: discountAmount.value * 100,
       discount_percent: currentDiscount.value,
       tax: tax.value * 100,
-      tax_rate: taxRate,
+      tax_rate: taxRate.value,
       total: total.value * 100,
       payment_method: paymentMethod.value,
       tendered: (tendered.value ?? total.value) * 100,
@@ -1498,6 +1733,10 @@ async function processPayment(){
     // Clear cart and close payment modal
     cart.value = []
     currentDiscount.value = 0
+    loyaltyEmployee.value = null
+    loyaltySearchQuery.value = ''
+    loyaltySearchResult.value = null
+    loyaltySearchError.value = ''
     closePayment()
 
     // Show receipt
@@ -1513,7 +1752,7 @@ async function processPayment(){
 
 // ---- Misc UI helpers
 function toggleView(){ /* placeholder */ }
-function openSettings(){ toast('Settings','Settings panel would open here') }
+function openSettings(){ window.location.href = '/settings/tax' }
 function placeholder(name:string){ return `https://via.placeholder.com/400x240/f97316/ffffff?text=${encodeURIComponent(name)}` }
 function onImgFallback(e:Event,p:Product){ const img=e.target as HTMLImageElement; img.src=placeholder(p.name) }
 function comingSoon(label:string){ toast('Coming soon', `${label} is under construction`, 'warning') }

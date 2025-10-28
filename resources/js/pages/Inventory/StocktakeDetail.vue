@@ -403,7 +403,7 @@ async function saveProgress() {
   try {
     const lines = stocktake.value.lines?.map(line => ({
       id: line.id,
-      actual_qty: line.actual_qty ?? 0,
+      actual_qty: line.actual_qty,  // Send null/undefined as-is, backend will default to system_qty
       notes: line.notes
     })) || []
 

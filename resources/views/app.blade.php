@@ -51,7 +51,7 @@
   @vite('resources/js/app.ts')
   @inertiaHead
 </head>
-<body class="min-h-screen gradient-bg">
+<body class="min-h-screen bg-gray-50">
   @inertia
 </body>
 </html>

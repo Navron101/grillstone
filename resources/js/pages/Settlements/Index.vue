@@ -190,7 +190,7 @@
 
     <!-- Settlement Detail Modal -->
     <div v-if="showDetailModal && selectedSettlement"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+         class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 p-4"
          @click.self="showDetailModal = false">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <!-- Header -->

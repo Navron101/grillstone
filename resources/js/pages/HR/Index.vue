@@ -60,9 +60,15 @@
             </a>
           </li>
           <li>
-            <a href="/payroll" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-              <i class="fas fa-money-bill-wave text-lg text-gray-600"></i>
-              <span v-if="sidebarOpen" class="font-medium">Payroll</span>
+            <a href="/hr/contracts" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+              <i class="fas fa-file-contract text-lg text-gray-600"></i>
+              <span v-if="sidebarOpen" class="font-medium">Contracts</span>
+            </a>
+          </li>
+          <li>
+            <a href="/hr/job-letters" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+              <i class="fas fa-file-alt text-lg text-gray-600"></i>
+              <span v-if="sidebarOpen" class="font-medium">Job Letters</span>
             </a>
           </li>
           <li>
@@ -188,7 +194,7 @@
             <i class="fas fa-bolt text-blue-600"></i>
             Quick Actions
           </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Manage Employees -->
             <a href="/hr/employees" class="glass-effect rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100 hover:border-blue-300 group">
               <div class="flex flex-col items-center text-center">
@@ -225,14 +231,25 @@
               </div>
             </a>
 
-            <!-- View Payroll -->
-            <a href="/payroll" class="glass-effect rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-100 hover:border-green-300 group">
+            <!-- Employment Contracts -->
+            <a href="/hr/contracts" class="glass-effect rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100 hover:border-orange-300 group">
               <div class="flex flex-col items-center text-center">
-                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <i class="fas fa-money-bill-wave text-white text-2xl"></i>
+                <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-file-contract text-white text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">View Payroll</h3>
-                <p class="text-sm text-gray-600">Manage employee compensation</p>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Contracts</h3>
+                <p class="text-sm text-gray-600">Generate employment contracts</p>
+              </div>
+            </a>
+
+            <!-- Job Letters -->
+            <a href="/hr/job-letters" class="glass-effect rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-teal-100 hover:border-teal-300 group">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-file-alt text-white text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Job Letters</h3>
+                <p class="text-sm text-gray-600">Generate appointment letters</p>
               </div>
             </a>
           </div>

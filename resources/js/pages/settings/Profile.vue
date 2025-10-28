@@ -7,9 +7,8 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem, type User } from '@/types';
+import { type User } from '@/types';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -17,13 +16,6 @@ interface Props {
 }
 
 defineProps<Props>();
-
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
 
 const page = usePage();
 const user = page.props.auth.user as User;
@@ -41,10 +33,14 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Profile settings" />
+    <Head title="Profile settings" />
 
-        <SettingsLayout>
+    <SettingsLayout>
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Profile Settings</h1>
+                <p class="text-sm text-gray-600 mt-1">Manage your account information and preferences</p>
+            </div>
+
             <div class="flex flex-col space-y-6">
                 <HeadingSmall title="Profile information" description="Update your name and email address" />
 
@@ -103,6 +99,5 @@ const submit = () => {
             </div>
 
             <DeleteUser />
-        </SettingsLayout>
-    </AppLayout>
+    </SettingsLayout>
 </template>
