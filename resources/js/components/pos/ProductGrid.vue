@@ -5,7 +5,7 @@
          @click="$emit('add', p)">
       <div class="relative">
         <img :src="p.img" :alt="p.name" class="w-full h-32 object-cover"
-             @error="(e:any)=> e.target.src=`https://via.placeholder.com/200x200/f97316/ffffff?text=${encodeURIComponent(p.name)}`">
+             @error="(e:any)=> e.target.src=getPlaceholder(p.name)">
         <div v-if="p.popular" class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Popular</div>
       </div>
       <div class="p-3">
@@ -22,6 +22,11 @@
 <script setup lang="ts">
 defineProps<{ products: Array<{id:number;name:string;price:number;img?:string;description?:string;popular?:boolean}> }>()
 defineEmits(['add'])
+
+function getPlaceholder(name: string) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#f97316" width="200" height="200"/><text fill="#ffffff" font-family="sans-serif" font-size="16" text-anchor="middle" x="100" y="105">${name}</text></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
 </script>
 <style scoped>
 .product-card{ transition: all .3s cubic-bezier(.4,0,.2,1); }

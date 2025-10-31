@@ -19,8 +19,9 @@ class OrderController extends Controller
     {
         $data = $request->validate([
             'items'                      => 'required|array|min:1',
-            'items.*.product_id'         => 'required|integer|exists:products,id',
+            'items.*.product_id'         => 'nullable|integer|exists:products,id',
             'items.*.variant_id'         => 'nullable|integer|exists:recipe_variants,id',
+            'items.*.combo_id'           => 'nullable|integer|exists:combos,id',
             'items.*.qty'                => 'required|integer|min:1',
             'discount_percent'           => 'nullable|numeric|min:0|max:50',
             'loyalty_employee_id'        => 'nullable|integer|exists:loyalty_employees,id',
@@ -35,24 +36,48 @@ class OrderController extends Controller
             $taxRate    = $taxEnabled ? (Setting::get('tax_rate', 15) / 100) : 0;
             $locationId = (int)($data['location_id'] ?? 1);
 
-            // Resolve price for each line (variant price overrides product price)
+            // Resolve price for each line (combo price > variant price > product price)
             $lines = collect($data['items'])->map(function ($line) {
+                $comboId      = $line['combo_id'] ?? null;
+                $variantId    = $line['variant_id'] ?? null;
+
+                // Handle combos
+                if ($comboId) {
+                    $combo = DB::table('combos')->where('id', $comboId)->first();
+                    if (!$combo) {
+                        throw new \Exception("Combo not found: {$comboId}");
+                    }
+
+                    return [
+                        'product'           => null,
+                        'combo'             => $combo,
+                        'combo_id'          => $comboId,
+                        'variant_id'        => null,
+                        'qty'               => (int)$line['qty'],
+                        'price_cents'       => (int)$combo->price_cents,
+                        'line_total_cents'  => (int)$combo->price_cents * (int)$line['qty'],
+                    ];
+                }
+
+                // Handle regular products and dishes
                 /** @var Product $p */
                 $p = Product::findOrFail($line['product_id']);
-
-                $variantId    = $line['variant_id'] ?? null;
                 $variantPrice = null;
 
+                // If variant exists, get variant price
                 if ($variantId) {
                     $variantPrice = DB::table('recipe_variants')
                         ->where('id', $variantId)
                         ->value('price_cents');
                 }
 
+                // Variant price takes precedence, then product
                 $price = (int) ($variantPrice ?? $p->price_cents);
 
                 return [
                     'product'           => $p,
+                    'combo'             => null,
+                    'combo_id'          => null,
                     'variant_id'        => $variantId,
                     'qty'               => (int)$line['qty'],
                     'price_cents'       => $price,
@@ -77,20 +102,35 @@ class OrderController extends Controller
             ]);
 
             foreach ($lines as $l) {
-                $payload = [
-                    'order_id'         => $order->id,
-                    'item_type'        => $l['product']->type ?? 'product',
-                    'item_id'          => $l['product']->id,
-                    'name'             => $l['product']->name,
-                    'qty'              => $l['qty'],
-                    'unit_price_cents' => $l['price_cents'],
-                    'line_total_cents' => $l['line_total_cents'],
-                    'tax_rate'         => $taxRate,
-                ];
+                // Handle combos vs regular products
+                if (!empty($l['combo'])) {
+                    $payload = [
+                        'order_id'         => $order->id,
+                        'item_type'        => 'combo',
+                        'item_id'          => $l['combo']->id,
+                        'name'             => $l['combo']->name,
+                        'qty'              => $l['qty'],
+                        'unit_price_cents' => $l['price_cents'],
+                        'line_total_cents' => $l['line_total_cents'],
+                        'tax_rate'         => $taxRate,
+                        'meta'             => json_encode(['combo_id' => (int)$l['combo_id']]),
+                    ];
+                } else {
+                    $payload = [
+                        'order_id'         => $order->id,
+                        'item_type'        => $l['product']->type ?? 'product',
+                        'item_id'          => $l['product']->id,
+                        'name'             => $l['product']->name,
+                        'qty'              => $l['qty'],
+                        'unit_price_cents' => $l['price_cents'],
+                        'line_total_cents' => $l['line_total_cents'],
+                        'tax_rate'         => $taxRate,
+                    ];
 
-                // Add variant info to meta if exists
-                if (!empty($l['variant_id'])) {
-                    $payload['meta'] = json_encode(['variant_id' => (int)$l['variant_id']]);
+                    // Add variant info to meta if exists
+                    if (!empty($l['variant_id'])) {
+                        $payload['meta'] = json_encode(['variant_id' => (int)$l['variant_id']]);
+                    }
                 }
 
                 OrderItem::create($payload);

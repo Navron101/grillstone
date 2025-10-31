@@ -13,6 +13,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { computed } from 'vue';
+
 const props = defineProps<{ type:'success'|'error'|'warning'; title:string; message:string }>()
 const icon = computed(()=> props.type==='success' ? 'fas fa-check' : props.type==='error' ? 'fas fa-times' : 'fas fa-exclamation' )
 </script>

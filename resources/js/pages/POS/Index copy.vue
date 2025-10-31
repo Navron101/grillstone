@@ -123,7 +123,7 @@
             <h3 class="text-sm font-semibold text-gray-700 mb-2">Payment Method:</h3>
             <div class="grid grid-cols-3 gap-2">
               <button @click="openPayment('Cash')" class="bg-gray-800 hover:bg-gray-900 text-white py-2 rounded-lg font-medium transition-colors">
-                <i class="fas fa-money-bills mr-1"></i><br>Cash
+                <i class="fas fa-money-bill-wave mr-1"></i><br>Cash
               </button>
               <button @click="openPayment('Card')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors">
                 <i class="fas fa-credit-card mr-1"></i><br>Card

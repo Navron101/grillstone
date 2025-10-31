@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title inertia>Grillstone</title>
 
   <!-- Template assets -->
@@ -50,6 +51,12 @@
 
   @vite('resources/js/app.ts')
   @inertiaHead
+
+  <!-- Share user data with frontend -->
+  <script>
+    window.Laravel = window.Laravel || {};
+    window.Laravel.user = @json(auth()->user()?->load('role'));
+  </script>
 </head>
 <body class="min-h-screen bg-gray-50">
   @inertia

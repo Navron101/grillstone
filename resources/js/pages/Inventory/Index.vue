@@ -67,6 +67,12 @@
               </a>
             </li>
             <li>
+              <a href="/inventory/combos" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                <i class="fas fa-layer-group text-lg text-gray-600"></i>
+                <span v-if="sidebarOpen" class="font-medium">Combos</span>
+              </a>
+            </li>
+            <li>
               <a href="/inventory/categories" class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors text-gray-700 hover:bg-orange-50 hover:text-orange-700">
                 <i class="fas fa-tags text-lg text-gray-600"></i>
                 <span v-if="sidebarOpen" class="font-medium">Categories</span>

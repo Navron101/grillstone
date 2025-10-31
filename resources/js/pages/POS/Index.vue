@@ -38,170 +38,11 @@
 
     <div class="flex h-[calc(100vh-80px)]">
       <!-- Left nav -->
-      <nav
-        class="glass-effect m-4 rounded-2xl shadow-2xl flex flex-col transition-all duration-300 overflow-hidden"
-        :class="sidebarOpen ? 'w-64' : 'w-20'"
-      >
-        <div class="flex items-center justify-between px-3 py-3">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <i class="fas fa-fire text-white text-base"></i>
-            </div>
-            <span v-if="sidebarOpen" class="font-semibold text-gray-800">Menu</span>
-          </div>
-          <button @click="toggleSidebar" class="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg">
-            <i class="fas" :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
-          </button>
-        </div>
-
-        <div class="px-2">
-          <ul class="mt-1 space-y-1">
-            <!-- POS Dropdown -->
-            <li>
-              <button @click="posMenuOpen = !posMenuOpen"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                      :class="isActive('/pos') || isActive('/settlements')
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-cash-register text-lg', (isActive('/pos') || isActive('/settlements')) ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">POS</span>
-                <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', posMenuOpen ? 'rotate-180' : '']"></i>
-              </button>
-
-              <!-- POS Submenu -->
-              <ul v-if="posMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
-                <li>
-                  <a href="/pos" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-store text-xs"></i>
-                    <span>Point of Sale</span>
-                  </a>
-                </li>
-                <li>
-                  <button @click="showPayoutModal = true" class="w-full flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-money-bill-transfer text-xs"></i>
-                    <span>Payout</span>
-                  </button>
-                </li>
-                <li>
-                  <button @click="showCloseTillModal = true" class="w-full flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-white bg-green-500 hover:bg-green-600">
-                    <i class="fas fa-cash-register text-xs"></i>
-                    <span>Close Till</span>
-                  </button>
-                </li>
-                <li>
-                  <a href="/settlements" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-file-invoice-dollar text-xs"></i>
-                    <span>Settlements</span>
-                  </a>
-                </li>
-              </ul>
-            </li>
-
-            <li>
-              <a :href="inventoryHref"
-                 class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                 :class="isActive(inventoryHref)
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-boxes-stacked text-lg', isActive(inventoryHref) ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">Inventory</span>
-              </a>
-            </li>
-
-            <li>
-              <a :href="reportsHref"
-                 class="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                 :class="isActive(reportsHref)
-                  ? 'bg-orange-600 text-white'
-                  : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-chart-line text-lg', isActive(reportsHref) ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">Reports</span>
-              </a>
-            </li>
-
-            <!-- HR Dropdown -->
-            <li>
-              <button @click="hrMenuOpen = !hrMenuOpen"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                      :class="isActive('/hr')
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-users text-lg', isActive('/hr') ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">HR</span>
-                <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', hrMenuOpen ? 'rotate-180' : '']"></i>
-              </button>
-
-              <!-- HR Submenu -->
-              <ul v-if="hrMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
-                <li>
-                  <a href="/hr" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-home text-xs"></i>
-                    <span>Dashboard</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/hr/employees" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-user-tie text-xs"></i>
-                    <span>Employees</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/hr/departments" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-building text-xs"></i>
-                    <span>Departments</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/hr/time-logs" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-clock text-xs"></i>
-                    <span>Time Logs</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/hr/clock" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-fingerprint text-xs"></i>
-                    <span>Clock In/Out</span>
-                  </a>
-                </li>
-              </ul>
-            </li>
-
-            <!-- Finance Dropdown -->
-            <li>
-              <button @click="financeMenuOpen = !financeMenuOpen"
-                      class="w-full flex items-center gap-3 rounded-xl px-3 py-2 transition-colors"
-                      :class="isActive('/payroll') || isActive('/loyalty')
-                        ? 'bg-orange-600 text-white'
-                        : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'">
-                <i :class="['fas fa-dollar-sign text-lg', (isActive('/payroll') || isActive('/loyalty')) ? 'text-white' : 'text-gray-600']"></i>
-                <span v-if="sidebarOpen" class="font-medium">Finance</span>
-                <i v-if="sidebarOpen" :class="['fas fa-chevron-down text-xs ml-auto transition-transform', financeMenuOpen ? 'rotate-180' : '']"></i>
-              </button>
-
-              <!-- Finance Submenu -->
-              <ul v-if="financeMenuOpen && sidebarOpen" class="mt-1 ml-6 space-y-1">
-                <li>
-                  <a href="/payroll" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-money-check-alt text-xs"></i>
-                    <span>Payroll</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/loyalty" class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700">
-                    <i class="fas fa-gift text-xs"></i>
-                    <span>Loyalty Program</span>
-                  </a>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-
-        <div class="mt-auto px-3 py-3 text-xs text-gray-500">
-          <div v-if="sidebarOpen">v0.1 • Grillstone</div>
-          <div v-else class="text-center">v0.1</div>
-        </div>
-      </nav>
+      <POSSidebar
+        v-model="sidebarOpen"
+        :onPayoutClick="() => showPayoutModal = true"
+        :onCloseTillClick="() => showCloseTillModal = true"
+      />
 
       <!-- Main area -->
       <div class="flex-1 flex">
@@ -226,28 +67,39 @@
               <i class="fas fa-shopping-cart text-4xl mb-4"></i>
               <p>Cart is empty</p><p class="text-sm">Add items to get started</p>
             </div>
-            <div v-for="(item,i) in cart" :key="i" class="cart-item bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-              <div class="flex-1">
-                <h4 class="font-medium text-gray-800">{{ item.name }}</h4>
-                <p class="text-xs text-gray-500">
-                  <span v-if="item.variant_name" class="mr-1">({{ item.variant_name }})</span>
-                  JMD {{ nf(item.price) }} each
-                </p>
-                <div class="flex items-center mt-2">
-                  <button @click="updateQuantity(i,-1)" class="w-6 h-6 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300">
-                    <i class="fas fa-minus text-xs"></i>
-                  </button>
-                  <span class="mx-3 font-medium">{{ item.qty }}</span>
-                  <button @click="updateQuantity(i,1)" class="w-6 h-6 bg-orange-100 rounded-full text-orange-600 hover:bg-orange-200">
-                    <i class="fas fa-plus text-xs"></i>
+            <div v-for="(item,i) in cart" :key="i" class="cart-item bg-gray-50 rounded-lg p-3">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-800">{{ item.name }}</h4>
+                  <p class="text-xs text-gray-500">
+                    <span v-if="item.variant_name" class="mr-1">({{ item.variant_name }})</span>
+                    JMD {{ nf(item.price) }} each
+                  </p>
+
+                  <!-- Combo items list -->
+                  <div v-if="item.is_combo && item.combo_items && item.combo_items.length" class="mt-2 ml-3 space-y-1">
+                    <div v-for="(comboItem, idx) in item.combo_items" :key="idx" class="text-xs text-gray-600 flex items-center gap-1">
+                      <i class="fas fa-circle text-[4px]"></i>
+                      <span>{{ comboItem.quantity }}x {{ comboItem.product.name }}</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center mt-2">
+                    <button @click="updateQuantity(i,-1)" class="w-6 h-6 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300">
+                      <i class="fas fa-minus text-xs"></i>
+                    </button>
+                    <span class="mx-3 font-medium">{{ item.qty }}</span>
+                    <button @click="updateQuantity(i,1)" class="w-6 h-6 bg-orange-100 rounded-full text-orange-600 hover:bg-orange-200">
+                      <i class="fas fa-plus text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="font-bold text-gray-800">JMD {{ nf(item.qty*item.price) }}</p>
+                  <button @click="removeFromCart(i)" class="text-red-500 hover:text-red-700 text-sm mt-1">
+                    <i class="fas fa-trash"></i>
                   </button>
                 </div>
-              </div>
-              <div class="text-right">
-                <p class="font-bold text-gray-800">JMD {{ nf(item.qty*item.price) }}</p>
-                <button @click="removeFromCart(i)" class="text-red-500 hover:text-red-700 text-sm mt-1">
-                  <i class="fas fa-trash"></i>
-                </button>
               </div>
             </div>
           </div>
@@ -308,7 +160,7 @@
               <h3 class="text-sm font-semibold text-gray-700 mb-2">Payment Method:</h3>
               <div class="grid grid-cols-3 gap-2">
                 <button @click="openPayment('Cash')" class="bg-gray-800 hover:bg-gray-900 text-white py-2 rounded-lg font-medium">
-                  <i class="fas fa-money-bills mr-1"></i><br>Cash
+                  <i class="fas fa-money-bill-wave mr-1"></i><br>Cash
                 </button>
                 <button @click="openPayment('Card')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium">
                   <i class="fas fa-credit-card mr-1"></i><br>Card
@@ -539,12 +391,20 @@
           <!-- Items -->
           <div class="border-t-2 border-dashed border-gray-300 pt-4 mb-4">
             <h3 class="font-semibold mb-3">Order Items</h3>
-            <div class="space-y-2 text-sm">
+            <div class="space-y-3 text-sm">
               <div v-for="(item, idx) in receiptData.items" :key="idx">
                 <div class="flex justify-between items-start">
                   <div class="flex-1">
                     <div class="font-medium">{{ item.name }}</div>
                     <div v-if="item.variant" class="text-xs text-gray-500 ml-2">{{ item.variant }}</div>
+
+                    <!-- Combo items list on receipt -->
+                    <div v-if="item.combo_items && item.combo_items.length" class="ml-3 mt-1 space-y-0.5">
+                      <div v-for="(comboItem, cidx) in item.combo_items" :key="cidx" class="text-xs text-gray-600">
+                        • {{ comboItem.quantity }}x {{ comboItem.product.name }}
+                      </div>
+                    </div>
+
                     <div class="text-xs text-gray-500">{{ item.qty }} × JMD {{ formatMoney(item.unit_price) }}</div>
                   </div>
                   <div class="font-semibold whitespace-nowrap ml-4">JMD {{ formatMoney(item.total) }}</div>
@@ -1015,6 +875,7 @@
 // Vue / Inertia
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
+import POSSidebar from '@/components/POSSidebar.vue'
 
 // ---- Page props from server
 type PageProps = { cashier: string; tableNumber: number; taxRate: number }
@@ -1028,7 +889,7 @@ const locationId = 1
 // Load tax settings from API
 async function loadTaxSettings() {
   try {
-    const resp = await fetch('/api/settings')
+    const resp = await fetch('/api/settings', { credentials: 'same-origin' })
     if (resp.ok) {
       const data = await resp.json()
       taxEnabled.value = data.settings.tax_enabled?.value ?? true
@@ -1044,32 +905,12 @@ const nf = (n:number) => n.toLocaleString()
 
 // ---- Sidebar
 const sidebarOpen = ref(true)
-const posMenuOpen = ref(false)
-const hrMenuOpen = ref(false)
-const financeMenuOpen = ref(false)
 function toggleSidebar(){ sidebarOpen.value = !sidebarOpen.value }
 onMounted(() => {
   const saved = localStorage.getItem('sidebarOpen')
   if (saved!==null) sidebarOpen.value = saved === '1'
-  // Auto-open POS menu if on POS or settlements page
-  if (window.location.pathname === '/pos' || window.location.pathname.startsWith('/settlements')) {
-    posMenuOpen.value = true
-  }
 })
 watch(sidebarOpen, v => localStorage.setItem('sidebarOpen', v ? '1' : '0'))
-
-// ---- Routes helpers (works with or without Ziggy)
-function routeUrl(name: string, fallback: string) {
-  try { // @ts-ignore
-    if (typeof route === 'function') return route(name)
-  } catch {}
-  return fallback
-}
-const posHref = routeUrl('pos.index', '/pos')
-const inventoryHref = '/inventory'
-const reportsHref = '/reports'
-const hrHref = '/hr/employees'
-function isActive(href: string){ try{ const cur=window.location.pathname; const path=new URL(href,window.location.origin).pathname; return cur.startsWith(path) }catch{ return false } }
 
 // ---- Logout
 const logout = () => { try { // @ts-ignore
@@ -1098,7 +939,8 @@ async function searchLoyaltyCustomer() {
     const res = await fetch('/api/loyalty/lookup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: loyaltySearchQuery.value.trim() })
+      body: JSON.stringify({ identifier: loyaltySearchQuery.value.trim() }),
+      credentials: 'same-origin'
     })
 
     if (res.ok) {
@@ -1171,7 +1013,8 @@ async function submitPayout() {
         reason: payoutForm.value.reason,
         recipient: payoutForm.value.recipient,
         notes: payoutForm.value.notes
-      })
+      }),
+      credentials: 'same-origin'
     })
     if (!resp.ok) throw new Error('Failed to record payout')
     toast('Success', `Payout of JMD ${payoutForm.value.amount} recorded`, 'success')
@@ -1187,7 +1030,7 @@ async function submitPayout() {
 
 async function loadCalculatedData() {
   try {
-    const resp = await fetch('/api/settlements/calculate')
+    const resp = await fetch('/api/settlements/calculate', { credentials: 'same-origin' })
     if (!resp.ok) throw new Error('Failed to calculate')
     calculatedData.value = await resp.json()
   } catch (e) {
@@ -1209,7 +1052,8 @@ async function submitCloseTill() {
       body: JSON.stringify({
         actual_cash: parseFloat(closeTillForm.value.actualCash),
         notes: closeTillForm.value.notes
-      })
+      }),
+      credentials: 'same-origin'
     })
     if (!resp.ok) throw new Error('Failed to close till')
     settlementData.value = await resp.json()
@@ -1257,15 +1101,20 @@ watch(showCloseTillModal, (newVal) => {
 type Product = {
   id:number; name:string; price:number; category:string; img?:string|null; description?:string|null; popular?:boolean;
   on_hand?: number; low_stock_threshold?: number; is_low_stock?: boolean; is_out_of_stock?: boolean; type?: string;
+  is_combo?: boolean; combo_id?: number; // For tracking combos
 }
 const products = ref<Product[]>([])
+const combos = ref<any[]>([])
 const loading = ref(false)
 
 async function loadProducts(){
   loading.value = true
   try{
     console.log('Loading products from API...')
-    const resp = await fetch(`/api/products?location_id=${locationId}`, { headers:{ 'Accept':'application/json' } })
+    const resp = await fetch(`/api/products?location_id=${locationId}`, {
+      headers:{ 'Accept':'application/json' },
+      credentials: 'same-origin'
+    })
     console.log('API Response status:', resp.status)
     if(!resp.ok){
       const errorText = await resp.text()
@@ -1276,6 +1125,9 @@ async function loadProducts(){
     console.log('Products loaded:', data.length, 'products')
     console.log('Sample product:', data[0])
     products.value = Array.isArray(data) ? data : []
+
+    // Also load combos
+    await loadCombos()
   }catch(e){
     console.error('loadProducts failed', e);
     toast('Error','Failed to load products','error')
@@ -1283,6 +1135,41 @@ async function loadProducts(){
   finally{
     loading.value = false
     console.log('Products in state:', products.value.length)
+  }
+}
+
+async function loadCombos(){
+  try{
+    console.log('Loading combos from API...')
+    const resp = await fetch('/api/combos?active_only=1', {
+      headers:{ 'Accept':'application/json' },
+      credentials: 'same-origin'
+    })
+    if(!resp.ok){
+      console.error('Failed to load combos')
+      return
+    }
+    const data = await resp.json()
+    console.log('Combos loaded:', data.length, 'combos')
+    combos.value = Array.isArray(data) ? data : []
+
+    // Add combos to products array for display
+    const comboProducts = combos.value.map(combo => ({
+      id: combo.id,
+      name: combo.name,
+      price: combo.price,
+      category: combo.category?.name || 'Combos',
+      img: combo.image_url,
+      description: combo.description,
+      type: 'combo',
+      is_combo: true,
+      combo_id: combo.id,
+      on_hand: 999, // Combos are always in stock (inventory handled via components)
+    }))
+
+    products.value = [...products.value, ...comboProducts]
+  }catch(e){
+    console.error('loadCombos failed', e);
   }
 }
 
@@ -1452,6 +1339,24 @@ async function onPickDish(p: Product){
     return
   }
 
+  // Handle combos - add directly to cart with combo items
+  if (p.is_combo || p.type === 'combo') {
+    console.log('Adding combo to cart:', p.name)
+    const combo = combos.value.find(c => c.id === p.combo_id)
+    const comboItems = combo?.items || []
+    addToCart({
+      id: p.combo_id!,
+      name: p.name,
+      price: p.price,
+      variant_id: null,
+      variant_name: null,
+      is_combo: true,
+      combo_id: p.combo_id,
+      combo_items: comboItems
+    })
+    return
+  }
+
   // Only dishes have variants, products (drinks, snacks) don't
   if (p.type !== 'dish') {
     console.log('Product type is not dish, adding directly to cart')
@@ -1463,7 +1368,10 @@ async function onPickDish(p: Product){
   console.log('Opening variant modal for dish:', p.name)
   variantModal.value = { show:true, product:p, variants:[], loading:true }
   try{
-    const resp = await fetch(`/api/inventory/dishes/${p.id}/variants`, { headers:{ 'Accept':'application/json' } })
+    const resp = await fetch(`/api/inventory/dishes/${p.id}/variants`, {
+      headers:{ 'Accept':'application/json' },
+      credentials: 'same-origin'
+    })
     console.log('Variants API response:', resp.status)
     if (resp.ok) {
       const rows = (await resp.json()) as any[]
@@ -1494,20 +1402,34 @@ function addVariantToCart(prod: Product, v: Variant){
 }
 
 // ---- Cart
-type CartItem = { id:number; name:string; price:number; qty:number; variant_id:number|null; variant_name:string|null }
+type ComboItem = { product: { id: number; name: string }; quantity: number }
+type CartItem = {
+  id:number;
+  name:string;
+  price:number;
+  qty:number;
+  variant_id:number|null;
+  variant_name:string|null;
+  is_combo?: boolean;
+  combo_id?: number;
+  combo_items?: ComboItem[];
+}
 const cart = ref<CartItem[]>([])
 const totalItems = computed(() => cart.value.reduce((s,i)=>s+i.qty,0))
 
-function addToCart(base:{ id:number; name:string; price:number; variant_id:number|null; variant_name:string|null }){
-  // stock control - allow negative but warn
-  const inCart = cart.value.filter(i=>i.id===base.id).reduce((s,i)=>s+i.qty,0)
-  const available = stockOf(base.id)
+function addToCart(base:{ id:number; name:string; price:number; variant_id:number|null; variant_name:string|null; is_combo?: boolean; combo_id?: number; combo_items?: ComboItem[] }){
+  // Skip stock control for combos (handled via component consumption)
+  if (!base.is_combo) {
+    // stock control - allow negative but warn
+    const inCart = cart.value.filter(i=>i.id===base.id).reduce((s,i)=>s+i.qty,0)
+    const available = stockOf(base.id)
 
-  if (inCart + 1 > available) {
-    if (available <= 0) {
-      toast('Negative Inventory', `Warning: ${base.name} has no stock available`, 'warning')
-    } else {
-      toast('Low Stock Warning', `Only ${available} units available, adding anyway`, 'warning')
+    if (inCart + 1 > available) {
+      if (available <= 0) {
+        toast('Negative Inventory', `Warning: ${base.name} has no stock available`, 'warning')
+      } else {
+        toast('Low Stock Warning', `Only ${available} units available, adding anyway`, 'warning')
+      }
     }
   }
 
@@ -1516,9 +1438,7 @@ function addToCart(base:{ id:number; name:string; price:number; variant_id:numbe
   if (ex) ex.qty++
   else cart.value.push({ ...base, qty:1 })
 
-  if (inCart + 1 <= available) {
-    toast('Added to Cart', `${base.name}${base.variant_name ? ' - '+base.variant_name : ''} added`)
-  }
+  toast('Added to Cart', `${base.name}${base.variant_name ? ' - '+base.variant_name : ''} added`)
 }
 
 function updateQuantity(i:number, d:number){
@@ -1669,8 +1589,9 @@ async function processPayment(){
     const payload = {
       location_id: locationId,
       items: cart.value.map(i => ({
-        product_id: i.id,
+        product_id: i.is_combo ? null : i.id, // null for combos, regular product_id otherwise
         variant_id: i.variant_id, // may be null
+        combo_id: i.combo_id || null, // Include combo_id for combos
         qty: i.qty,
       })),
       discount_percent: currentDiscount.value,
@@ -1685,6 +1606,7 @@ async function processPayment(){
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' },
       body: JSON.stringify(payload),
+      credentials: 'same-origin'
     })
 
     if (!resp.ok) {
@@ -1717,7 +1639,8 @@ async function processPayment(){
         variant: item.variant_name,
         qty: item.qty,
         unit_price: item.price * 100, // Convert to cents for formatMoney
-        total: item.qty * item.price * 100 // Convert to cents for formatMoney
+        total: item.qty * item.price * 100, // Convert to cents for formatMoney
+        combo_items: item.combo_items // Include combo items for display on receipt
       })),
       subtotal: subtotal.value * 100, // Convert to cents
       discount: discountAmount.value * 100,
@@ -1753,7 +1676,11 @@ async function processPayment(){
 // ---- Misc UI helpers
 function toggleView(){ /* placeholder */ }
 function openSettings(){ window.location.href = '/settings/tax' }
-function placeholder(name:string){ return `https://via.placeholder.com/400x240/f97316/ffffff?text=${encodeURIComponent(name)}` }
+function placeholder(name:string){
+  const text = encodeURIComponent(name).slice(0, 20);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240"><rect fill="#f97316" width="400" height="240"/><text fill="#ffffff" font-family="sans-serif" font-size="20" text-anchor="middle" x="200" y="130">${name}</text></svg>`;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
 function onImgFallback(e:Event,p:Product){ const img=e.target as HTMLImageElement; img.src=placeholder(p.name) }
 function comingSoon(label:string){ toast('Coming soon', `${label} is under construction`, 'warning') }
 

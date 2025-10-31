@@ -8,6 +8,7 @@ use Inertia\Inertia;
 Route::middleware('auth')->group(function () {
     Route::redirect('settings', '/settings/profile');
 
+    // Profile and password settings - accessible to all authenticated users
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -22,11 +23,19 @@ Route::middleware('auth')->group(function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
 
-    Route::get('settings/tax', function () {
-        return Inertia::render('settings/Tax');
-    })->name('tax');
+    // Settings module - requires Settings module access
+    Route::middleware('module:Settings')->group(function () {
+        Route::get('settings/tax', function () {
+            return Inertia::render('settings/Tax');
+        })->name('tax');
 
-    Route::get('settings/hr', function () {
-        return Inertia::render('settings/HR');
-    })->name('hr');
+        Route::get('settings/hr', function () {
+            return Inertia::render('settings/HR');
+        })->name('hr');
+
+        // User Administration (Admin & Director only)
+        Route::get('settings/users', function () {
+            return Inertia::render('settings/Users');
+        })->name('users');
+    });
 });
